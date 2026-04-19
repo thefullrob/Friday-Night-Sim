@@ -1,0 +1,3160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Friday Night Sim</title>
+<style>
+/* ---------- Reset & Base ---------- */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0a0a14;color:#f5f5f7;font-family:'Helvetica Neue','Arial',sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+body{position:relative;width:100vw;height:100vh;overflow:hidden}
+img{display:block;max-width:100%}
+
+/* ---------- Common ---------- */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+.btn{display:inline-block;cursor:pointer;border:none;font-family:inherit;font-weight:700;letter-spacing:.02em;transition:all .15s ease;-webkit-user-select:none}
+.btn:active{transform:translateY(1px) scale(.99)}
+
+/* ---------- Title Screen ---------- */
+#title-screen{background:#0a0a14;justify-content:flex-start;align-items:center;padding-bottom:20px}
+.title-hero{width:100%;height:auto;display:block;flex-shrink:0;object-fit:contain}
+.title-tagline{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:12px 28px;text-align:center;gap:10px;min-height:0}
+.title-tagline .kicker{font-size:11px;color:#e91e63;letter-spacing:.3em;text-transform:uppercase;font-weight:800;text-shadow:0 0 10px rgba(233,30,99,.5)}
+.title-tagline .lines{font-size:17px;color:#e8e8f0;line-height:1.55;font-style:italic;font-weight:400;text-shadow:0 2px 8px rgba(0,0,0,.9)}
+.title-tagline .lines b{color:#ffca28;font-style:normal;font-weight:800;letter-spacing:.02em}
+.title-buttons{display:flex;flex-direction:column;gap:12px;z-index:2;width:min(86%,340px);flex-shrink:0;margin-top:8px}
+.title-btn{background:#e91e63;color:#fff;padding:16px 24px;border-radius:32px;font-size:18px;text-transform:uppercase;box-shadow:0 6px 0 #8e0e3f,0 10px 24px rgba(233,30,99,.35)}
+.title-btn:active{box-shadow:0 2px 0 #8e0e3f,0 6px 12px rgba(233,30,99,.35);transform:translateY(3px)}
+.title-btn.secondary{background:#1f2040;color:#f5f5f7;box-shadow:0 6px 0 #0d0e24,0 10px 24px rgba(0,0,0,.4)}
+.title-btn.secondary:active{box-shadow:0 2px 0 #0d0e24;transform:translateY(3px)}
+
+/* ---------- Character Select ---------- */
+#character-select{background:#0a0a14 url('art/Character Select Screen Background.jpg') center center/cover no-repeat}
+#character-select::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,20,.75),rgba(10,10,20,.92));pointer-events:none}
+.cs-header{position:relative;z-index:2;padding:24px 20px 12px;text-align:center}
+.cs-header h1{font-size:28px;color:#e91e63;text-transform:uppercase;letter-spacing:.08em;text-shadow:3px 3px 0 #000,0 0 18px rgba(233,30,99,.6)}
+.cs-header p{margin-top:8px;font-size:13px;color:#bdbdd6}
+.cs-grid{position:relative;z-index:2;flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;overflow:auto}
+.cs-card{position:relative;border-radius:14px;overflow:hidden;cursor:pointer;border:3px solid #2a2a4a;background:#0a0a14;transition:transform .15s,border-color .15s;aspect-ratio:3/5;display:flex;align-items:stretch}
+.cs-card:active{transform:scale(.97)}
+.cs-card.available:hover,.cs-card.available:focus{border-color:#e91e63}
+.cs-card img{width:100%;height:100%;object-fit:contain;object-position:center center;background:#0a0a14}
+.cs-card .cs-label{position:absolute;inset:auto 0 0 0;padding:10px 10px 8px;background:linear-gradient(180deg,transparent,rgba(10,10,20,.95));color:#fff;font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:.04em}
+.cs-card .cs-role{font-size:11px;font-weight:500;color:#e91e63;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.cs-card.locked{opacity:.55;cursor:not-allowed}
+.cs-card.locked::after{content:"Coming Soon";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-12deg);background:#000;color:#ffca28;padding:6px 14px;font-size:13px;font-weight:800;letter-spacing:.08em;border:2px solid #ffca28;text-transform:uppercase}
+.cs-back{position:absolute;top:16px;left:14px;z-index:3;background:rgba(0,0,0,.6);color:#fff;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;border:2px solid #3a3a5a}
+
+/* ---------- Game Screen ---------- */
+#game-screen{background:#0a0a14}
+.hud-top{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#0a0a14;border-bottom:1px solid #2a2a4a;flex-shrink:0;gap:8px}
+.hud-time{font-weight:800;font-size:13px;color:#e91e63;letter-spacing:.06em;white-space:nowrap}
+.hud-location{font-size:11px;color:#9393b8;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px}
+.hud-phone{position:relative;background:#1f2040;color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;border:1px solid #3a3a5a;flex-shrink:0}
+.hud-phone .badge{position:absolute;top:-4px;right:-4px;background:#ff3d5c;color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:10px;padding:0 5px;display:flex;align-items:center;justify-content:center;line-height:1}
+.hud-phone .badge.hidden{display:none}
+
+.hud-stats{display:flex;padding:6px 12px;gap:10px;background:#101024;flex-shrink:0;border-bottom:1px solid #2a2a4a}
+.stat{flex:1;display:flex;flex-direction:column;gap:3px}
+.stat-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#8888a8;font-weight:700}
+.stat-bar{height:6px;background:#1f2040;border-radius:3px;overflow:hidden;position:relative}
+.stat-bar .fill{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);width:2px;background:#fff;border-radius:2px;transition:all .3s}
+.stat.notoriety .fill{background:#ff6f00}
+.stat.morality .fill{background:#4fc3f7}
+.stat.chaos .fill{background:#ab47bc}
+.stat-val{font-size:10px;font-weight:700;color:#bdbdd6;text-align:center}
+
+.scene-image{flex:0 0 auto;width:100%;background:#000;position:relative;overflow:hidden;max-height:40vh;display:flex;align-items:center;justify-content:center}
+.scene-image img{width:100%;max-height:40vh;object-fit:contain;object-position:center;background:#000}
+.scene-image.darker::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.18);pointer-events:none}
+
+.scene-body{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0a0a14}
+.scene-narration{flex:1;overflow-y:auto;padding:16px 18px 10px;-webkit-overflow-scrolling:touch}
+.scene-narration p{margin-bottom:10px;font-size:15px;line-height:1.55;color:#e8e8f0}
+.scene-narration p.italic{font-style:italic;color:#bdbdd6}
+.scene-narration p.quote{font-style:italic;color:#ffca28;border-left:3px solid #e91e63;padding-left:12px;margin-left:2px}
+.scene-narration .stinger{display:block;margin-top:4px;color:#ff3d5c;font-weight:700;letter-spacing:.04em}
+.scene-narration .fx{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin:4px 4px 4px 0}
+.fx.item{background:#134e1f;color:#76ff7a}
+.fx.lose{background:#4e1313;color:#ff7676}
+.fx.rep{background:#1f2040;color:#ffca28}
+
+.scene-choices{flex-shrink:0;padding:8px 12px 14px;background:linear-gradient(180deg,rgba(10,10,20,0),rgba(10,10,20,.95) 12%);display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto}
+.choice{background:#1f2040;color:#f5f5f7;padding:12px 14px;border-radius:12px;border:2px solid #3a3a5a;text-align:left;font-size:14px;line-height:1.3;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.choice:hover,.choice:active{border-color:#e91e63;background:#2a2a50}
+.choice .emoji{font-size:18px;line-height:1;flex-shrink:0}
+.choice .copy{flex:1}
+.choice .label{font-weight:700;display:block}
+.choice .flavor{display:block;font-size:12px;color:#9393b8;font-style:italic;margin-top:3px}
+.choice.locked{opacity:.45;cursor:not-allowed}
+.choice.locked:hover{border-color:#3a3a5a;background:#1f2040}
+.choice .req{display:block;font-size:10px;color:#ff3d5c;margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+
+/* ---------- Inventory Bar ---------- */
+.inventory-bar{display:flex;gap:4px;padding:8px 12px;background:#101024;border-top:1px solid #2a2a4a;flex-shrink:0;overflow-x:auto}
+.inv-slot{flex:0 0 auto;width:38px;height:38px;background:#1f2040;border:2px solid #3a3a5a;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;position:relative}
+.inv-slot.filled{border-color:#e91e63;background:#2a1a30}
+.inv-slot:hover .inv-tip{display:block}
+.inv-tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:4px 8px;border-radius:6px;font-size:10px;white-space:nowrap;z-index:10;pointer-events:none;border:1px solid #e91e63}
+
+/* ---------- Phone Overlay ---------- */
+#phone-overlay{position:absolute;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+#phone-overlay.active{display:flex}
+.phone-frame{width:min(92%,340px);max-height:80vh;background:url('art/Phone Screen Overlay.jpg') center/contain no-repeat;position:relative;aspect-ratio:9/18;display:flex;flex-direction:column;overflow:hidden}
+.phone-screen{position:absolute;top:11%;left:9%;right:9%;bottom:11%;background:#12121e;border-radius:8px;padding:10px;display:flex;flex-direction:column;overflow:hidden}
+.phone-header{display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:8px;flex-shrink:0}
+.phone-title{font-weight:800;font-size:14px;color:#fff;margin-bottom:8px;flex-shrink:0}
+.phone-list{flex:1;overflow-y:auto;font-size:12px}
+.phone-item{background:#1e1e32;border-radius:8px;padding:8px 10px;margin-bottom:6px;border-left:3px solid #e91e63}
+.phone-item .from{font-weight:700;color:#e91e63;font-size:11px;margin-bottom:2px}
+.phone-item .when{font-size:9px;color:#666;float:right}
+.phone-item .body{color:#ccc;font-size:12px;line-height:1.3}
+.phone-item.missed{border-left-color:#ff3d5c}
+.phone-item.missed .from{color:#ff3d5c}
+.phone-item.ominous{border-left-color:#ab47bc}
+.phone-item.ominous .from{color:#ab47bc}
+.phone-close{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;border:1px solid #555;z-index:5}
+
+/* ---------- End Screen ---------- */
+#end-screen{background:#0a0a14 url('art/Game Over Dawn Screen.jpg') center top/contain no-repeat}
+#end-screen::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,20,.35) 0%,rgba(10,10,20,.8) 50%,rgba(10,10,20,.98) 100%)}
+.end-wrap{position:relative;z-index:2;flex:1;overflow-y:auto;padding:28px 22px;-webkit-overflow-scrolling:touch}
+.end-rating{text-align:center;margin-bottom:22px;padding-bottom:18px;border-bottom:2px solid #2a2a4a}
+.end-rating .kicker{font-size:11px;color:#9393b8;text-transform:uppercase;letter-spacing:.2em;margin-bottom:6px}
+.end-rating .rating{font-size:38px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;text-shadow:3px 3px 0 #000,0 0 24px rgba(233,30,99,.6)}
+.end-rating.legendary .rating{color:#ffca28}
+.end-rating.antihero .rating{color:#ab47bc}
+.end-rating.survivor .rating{color:#4fc3f7}
+.end-rating.infamous .rating{color:#ff6f00}
+.end-rating.ghost .rating{color:#b0bec5}
+.end-rating.pyrrhic .rating{color:#e91e63}
+.end-rating.cliffhanger .rating{color:#ff3d5c}
+.end-rating .flavor{margin-top:8px;font-style:italic;color:#ccc;font-size:14px;line-height:1.5;max-width:440px;margin-left:auto;margin-right:auto}
+.end-section-title{font-size:12px;text-transform:uppercase;letter-spacing:.18em;color:#e91e63;font-weight:800;margin:18px 0 8px}
+.end-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.end-stat{background:rgba(31,32,64,.7);border:1px solid #3a3a5a;border-radius:10px;padding:10px;text-align:center}
+.end-stat .n{font-size:22px;font-weight:900;color:#fff}
+.end-stat .l{font-size:10px;text-transform:uppercase;color:#9393b8;letter-spacing:.1em;margin-top:2px}
+.timeline{background:rgba(10,10,20,.7);border:1px solid #2a2a4a;border-radius:12px;padding:12px 14px;max-height:40vh;overflow-y:auto}
+.timeline-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed #2a2a4a;font-size:13px;line-height:1.4}
+.timeline-row:last-child{border:none}
+.timeline-row .t{flex:0 0 64px;font-weight:700;color:#e91e63;font-size:12px;letter-spacing:.03em}
+.timeline-row .d{flex:1;color:#e8e8f0}
+.end-buttons{display:flex;gap:10px;margin-top:18px;justify-content:center}
+.end-buttons .title-btn{flex:1;max-width:180px;font-size:15px;padding:12px 16px}
+
+/* ---------- Animations ---------- */
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.scene-narration,.scene-choices{animation:fadeIn .3s ease}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.hud-phone.buzzing{animation:pulse .5s ease infinite}
+@keyframes flash{0%,100%{background:#1f2040}50%{background:#e91e63}}
+.flash{animation:flash .4s ease 2}
+
+/* ---------- Small toast ---------- */
+.toast{position:fixed;top:84px;left:50%;transform:translateX(-50%);background:#e91e63;color:#fff;padding:10px 16px;border-radius:22px;font-size:13px;font-weight:700;z-index:100;box-shadow:0 6px 24px rgba(233,30,99,.5);pointer-events:none;animation:toastIn 2.5s ease forwards}
+@keyframes toastIn{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}10%,80%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+
+/* ---------- Desktop adjustments ---------- */
+@media (min-width:700px){
+  html,body{overflow:hidden}
+  body{display:flex;align-items:center;justify-content:center;background:#06060e}
+  .screen{position:relative !important;inset:auto !important;width:min(480px,95vw);height:min(880px,95vh);border-radius:18px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.85)}
+  #phone-overlay{position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;border-radius:0 !important;background:rgba(0,0,0,.85) !important;box-shadow:none !important}
+  body::before{content:"Friday Night Sim";position:fixed;top:20px;left:30px;color:#444;font-size:12px;letter-spacing:.3em;text-transform:uppercase;pointer-events:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============= TITLE SCREEN ============= -->
+<div id="title-screen" class="screen active">
+  <img class="title-hero" src="art/Title Screen.jpg" alt="Friday Night Sim">
+  <div class="title-tagline">
+    <div class="kicker">Friday — 5:30 PM</div>
+    <div class="lines">Four strangers.<br>One city.<br>One long, weird night.<br><br><b>6 PM to 6 AM.</b><br>No safe choices.</div>
+  </div>
+  <div class="title-buttons">
+    <button class="btn title-btn" onclick="showCharacterSelect()">Start Your Friday Night</button>
+    <button class="btn title-btn secondary" onclick="showAbout()">About</button>
+  </div>
+</div>
+
+<!-- ============= CHARACTER SELECT ============= -->
+<div id="character-select" class="screen">
+  <div class="cs-back" onclick="showTitle()">&larr;</div>
+  <div class="cs-header">
+    <h1>Who Are You Tonight?</h1>
+    <p>It's 5:30 PM. Your choice. Your night.</p>
+  </div>
+  <div class="cs-grid">
+    <div class="cs-card available" onclick="startGame('bob')">
+      <img src="art/Bob - The Photojournalist.jpg" alt="Bob">
+      <div class="cs-label"><div class="cs-role">The Photojournalist</div>Bob</div>
+    </div>
+    <div class="cs-card available" onclick="startGame('trisha')">
+      <img src="art/Trisha - The Librarian.jpg" alt="Trisha">
+      <div class="cs-label"><div class="cs-role">The Librarian</div>Trisha</div>
+    </div>
+    <div class="cs-card locked">
+      <img src="art/Jack - The Car Salesman.jpg" alt="Jack">
+      <div class="cs-label"><div class="cs-role">The Car Salesman</div>Jack</div>
+    </div>
+    <div class="cs-card locked">
+      <img src="art/Gina - The Pharma Rep.jpg" alt="Gina">
+      <div class="cs-label"><div class="cs-role">The Pharma Rep</div>Gina</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============= GAME SCREEN ============= -->
+<div id="game-screen" class="screen">
+  <div class="hud-top">
+    <div class="hud-time" id="hud-time">5:30 PM</div>
+    <div class="hud-location" id="hud-location">Home</div>
+    <button class="hud-phone" id="hud-phone" onclick="showPhone()">📱<span class="badge hidden" id="phone-badge">0</span></button>
+  </div>
+  <div class="hud-stats">
+    <div class="stat notoriety"><div class="stat-label">Notoriety</div><div class="stat-bar"><div class="fill" id="stat-notoriety" style="left:50%"></div></div></div>
+    <div class="stat morality"><div class="stat-label">Morality</div><div class="stat-bar"><div class="fill" id="stat-morality" style="left:50%"></div></div></div>
+    <div class="stat chaos"><div class="stat-label">Chaos</div><div class="stat-bar"><div class="fill" id="stat-chaos" style="left:50%"></div></div></div>
+  </div>
+  <div class="scene-image" id="scene-image"></div>
+  <div class="scene-body">
+    <div class="scene-narration" id="scene-narration"></div>
+    <div class="scene-choices" id="scene-choices"></div>
+  </div>
+  <div class="inventory-bar" id="inventory-bar"></div>
+</div>
+
+<!-- ============= PHONE OVERLAY ============= -->
+<div id="phone-overlay">
+  <div class="phone-frame">
+    <div class="phone-close" onclick="hidePhone()">✕</div>
+    <div class="phone-screen">
+      <div class="phone-header"><span id="phone-time">5:30 PM</span><span>●●● 📶 🔋</span></div>
+      <div class="phone-title">Notifications</div>
+      <div class="phone-list" id="phone-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============= END SCREEN ============= -->
+<div id="end-screen" class="screen">
+  <div class="end-wrap">
+    <div class="end-rating" id="end-rating">
+      <div class="kicker">Your Night Is Over</div>
+      <div class="rating" id="end-rating-name">SURVIVOR</div>
+      <div class="flavor" id="end-rating-flavor"></div>
+    </div>
+    <div class="end-section-title">The Numbers</div>
+    <div class="end-stats">
+      <div class="end-stat"><div class="n" id="end-noto">0</div><div class="l">Notoriety</div></div>
+      <div class="end-stat"><div class="n" id="end-mora">0</div><div class="l">Morality</div></div>
+      <div class="end-stat"><div class="n" id="end-chao">0</div><div class="l">Chaos</div></div>
+    </div>
+    <div class="end-section-title">The Night, Replayed</div>
+    <div class="timeline" id="end-timeline"></div>
+    <div class="end-buttons">
+      <button class="btn title-btn" onclick="showCharacterSelect()">Another Night</button>
+      <button class="btn title-btn secondary" onclick="showTitle()">Title</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   FRIDAY NIGHT SIM — Engine + Scene Data
+   ================================================================ */
+const IMG = (name) => `art/${name}.jpg`;
+
+/* ---------- Items ---------- */
+const ITEMS = {
+  // Bob
+  camera: {emoji:"📷", name:"Disposable Camera"},
+  keycard: {emoji:"🔑", name:"City Hall Keycard"},
+  cash500: {emoji:"💰", name:"$500 Cash"},
+  usb: {emoji:"💾", name:"USB Drive"},
+  ledger: {emoji:"📓", name:"Crane's Ledger"},
+  eyedrops: {emoji:"👁️", name:"Midnight Pharmacy Eyedrops"},
+  knife: {emoji:"🔪", name:"Pocket Knife"},
+  gun: {emoji:"🔫", name:"Crane's Gun"},
+  envelope: {emoji:"📜", name:"Carmen's Envelope"},
+  photos: {emoji:"🖼️", name:"Cash-Handoff Photos"},
+  // Trisha
+  badge: {emoji:"🪪", name:"Library Access Badge"},
+  uv: {emoji:"🔦", name:"UV Flashlight"},
+  cert: {emoji:"📄", name:"Forged Authentication Cert"},
+  tea: {emoji:"🍵", name:"Midnight Pharmacy Tea"},
+  burner: {emoji:"📟", name:"Burner Phone"},
+  dress: {emoji:"👗", name:"Borrowed Designer Dress"},
+  manuscript: {emoji:"📕", name:"The Aldworth Manuscript"},
+  martinsNote: {emoji:"🗒️", name:"Martin's Research Notes"},
+  vossKey: {emoji:"🗝️", name:"Voss's Gallery Key"},
+};
+
+/* ---------- State ---------- */
+const state = {
+  character: null,
+  currentScene: null,
+  inventory: [],
+  rep: {notoriety:0, morality:0, chaos:0},
+  stability: 10,
+  history: [],
+  phone: [],
+  flags: {},
+  bossOutcome: null,
+  usedPower: 0,
+  gotPower: false,
+};
+
+function resetState(char){
+  state.character = char;
+  state.currentScene = null;
+  state.inventory = [];
+  state.rep = {notoriety:0, morality:0, chaos:0};
+  state.stability = 10;
+  state.history = [];
+  state.phone = [];
+  state.flags = {};
+  state.bossOutcome = null;
+  state.usedPower = 0;
+  state.gotPower = false;
+}
+
+/* ---------- Screens ---------- */
+function hideAll(){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); }
+function showTitle(){ hideAll(); document.getElementById("title-screen").classList.add("active"); }
+function showCharacterSelect(){ hideAll(); document.getElementById("character-select").classList.add("active"); }
+function showAbout(){
+  alert("FRIDAY NIGHT SIM\nA comedy-thriller branching narrative.\n\nOne night. 6 PM to 6 AM. Four characters, one city, one long weird Friday.\n\nChoices are permanent. Items matter. The phone will not stop buzzing.\n\nv1 — Bob & Trisha playable.");
+}
+
+/* ---------- Game Start ---------- */
+function startGame(char){
+  resetState(char);
+  hideAll();
+  document.getElementById("game-screen").classList.add("active");
+  const first = char === "bob" ? "BOB_01" : "TRISHA_01";
+  renderScene(first);
+}
+
+/* ---------- Scene Rendering ---------- */
+function renderScene(id){
+  const scene = SCENES[id];
+  if(!scene){
+    console.error("Missing scene:", id);
+    document.getElementById("scene-narration").innerHTML = `<p><em>Scene not found: ${id}</em></p>`;
+    document.getElementById("scene-choices").innerHTML = "";
+    return;
+  }
+  state.currentScene = id;
+
+  // Run onEnter effects (item add, rep changes, flags, phone events)
+  const effectMsgs = [];
+  if(scene.onEnter){
+    applyEffects(scene.onEnter, effectMsgs);
+  }
+
+  // Record to history (for timeline)
+  state.history.push({id, time: scene.time, note: scene.timelineNote || scene.title || id});
+
+  // Update HUD
+  document.getElementById("hud-time").textContent = scene.time || "";
+  document.getElementById("hud-location").textContent = scene.location || "";
+
+  // Update stats display
+  renderStats();
+  renderInventory();
+  renderPhoneBadge();
+
+  // Scene image
+  const imgEl = document.getElementById("scene-image");
+  if(scene.image){
+    imgEl.innerHTML = `<img src="${IMG(scene.image)}" alt="">`;
+  } else {
+    imgEl.innerHTML = "";
+  }
+
+  // Narration — supports strings, functions, and {text,style} objects (text may itself be a function)
+  const narr = document.getElementById("scene-narration");
+  narr.innerHTML = "";
+  const resolveText = (v) => typeof v === "function" ? v(state) : v;
+  const paragraphs = Array.isArray(scene.text) ? scene.text : [scene.text];
+  paragraphs.forEach(p => {
+    const el = document.createElement("p");
+    const resolved = resolveText(p);
+    if(typeof resolved === "string"){
+      el.innerHTML = resolved;
+    } else if(resolved && typeof resolved === "object"){
+      el.innerHTML = resolveText(resolved.text) || "";
+      if(resolved.style) el.className = resolved.style;
+    }
+    narr.appendChild(el);
+  });
+
+  // Effect banners appear at the top of the body after narration
+  if(effectMsgs.length){
+    const fxHolder = document.createElement("p");
+    fxHolder.style.marginTop = "4px";
+    effectMsgs.forEach(m => { fxHolder.innerHTML += `<span class="fx ${m.kind}">${m.text}</span> `; });
+    narr.appendChild(fxHolder);
+  }
+
+  // Choices
+  const choicesEl = document.getElementById("scene-choices");
+  choicesEl.innerHTML = "";
+  const visibleChoices = (scene.choices || []).filter(c => !c.hide || !c.hide(state));
+  visibleChoices.forEach(c => {
+    const locked = c.requires && !checkRequires(c.requires);
+    const div = document.createElement("button");
+    div.className = "choice" + (locked ? " locked" : "");
+    const flavor = c.flavor ? `<span class="flavor">${c.flavor}</span>` : "";
+    const req = locked ? `<span class="req">Requires: ${describeRequires(c.requires)}</span>` : "";
+    div.innerHTML = `
+      <span class="emoji">${c.emoji || "→"}</span>
+      <span class="copy"><span class="label">${c.label}</span>${flavor}${req}</span>
+    `;
+    if(!locked){ div.onclick = () => makeChoice(c); }
+    choicesEl.appendChild(div);
+  });
+
+  // Terminal scene? show ending button
+  if(scene.ending){
+    const btn = document.createElement("button");
+    btn.className = "choice";
+    btn.style.background = "#e91e63";
+    btn.style.borderColor = "#e91e63";
+    btn.innerHTML = `<span class="emoji">🌅</span><span class="copy"><span class="label">See Your Rating</span><span class="flavor">The night is over. Review the damage.</span></span>`;
+    btn.onclick = () => showEnding();
+    choicesEl.appendChild(btn);
+  }
+
+  // Scroll narration to top
+  narr.scrollTop = 0;
+  choicesEl.scrollTop = 0;
+}
+
+/* ---------- Effects ---------- */
+function applyEffects(fx, msgs){
+  if(!fx) return;
+  if(fx.items){
+    fx.items.forEach(it => {
+      if(!state.inventory.includes(it) && state.inventory.length < 6){
+        state.inventory.push(it);
+        if(msgs) msgs.push({kind:"item", text:`+${ITEMS[it]?.emoji||""} ${ITEMS[it]?.name||it}`});
+      }
+    });
+  }
+  if(fx.lose){
+    fx.lose.forEach(it => {
+      const idx = state.inventory.indexOf(it);
+      if(idx >= 0){
+        state.inventory.splice(idx,1);
+        if(msgs) msgs.push({kind:"lose", text:`−${ITEMS[it]?.emoji||""} ${ITEMS[it]?.name||it}`});
+      }
+    });
+  }
+  if(fx.rep){
+    Object.keys(fx.rep).forEach(k => {
+      state.rep[k] = (state.rep[k]||0) + fx.rep[k];
+      if(msgs){
+        const sign = fx.rep[k] > 0 ? "+" : "";
+        msgs.push({kind:"rep", text:`${sign}${fx.rep[k]} ${k.charAt(0).toUpperCase()+k.slice(1)}`});
+      }
+    });
+  }
+  if(fx.flags){
+    Object.assign(state.flags, fx.flags);
+  }
+  if(fx.power){
+    state.gotPower = true;
+  }
+  if(fx.usePower){
+    state.usedPower += 1;
+    state.stability -= 1;
+  }
+  if(fx.stability){
+    state.stability += fx.stability;
+  }
+  if(fx.phone){
+    fx.phone.forEach(n => addPhoneNotification(n));
+  }
+  if(fx.boss){
+    state.bossOutcome = fx.boss;
+  }
+}
+
+function checkRequires(req){
+  if(!req) return true;
+  if(req.item && !state.inventory.includes(req.item)) return false;
+  if(req.any) return req.any.some(i => state.inventory.includes(i));
+  if(req.all) return req.all.every(i => state.inventory.includes(i));
+  if(req.rep){
+    for(const k in req.rep){ if((state.rep[k]||0) < req.rep[k]) return false; }
+  }
+  if(req.flag && !state.flags[req.flag]) return false;
+  if(req.noItem && state.inventory.includes(req.noItem)) return false;
+  if(req.power && !state.gotPower) return false;
+  return true;
+}
+
+function describeRequires(req){
+  const parts = [];
+  if(req.item) parts.push(ITEMS[req.item]?.name || req.item);
+  if(req.any) parts.push("any of: " + req.any.map(i=>ITEMS[i]?.name||i).join(", "));
+  if(req.all) parts.push(req.all.map(i=>ITEMS[i]?.name||i).join(" + "));
+  if(req.power) parts.push("Your power");
+  if(req.rep){ for(const k in req.rep) parts.push(`${k} ≥ ${req.rep[k]}`); }
+  return parts.join(" · ");
+}
+
+function makeChoice(choice){
+  const msgs = [];
+  if(choice.effects) applyEffects(choice.effects, msgs);
+  if(msgs.length) renderStats();
+  renderScene(choice.next);
+}
+
+/* ---------- UI Rendering ---------- */
+function renderStats(){
+  const clamp = (n) => Math.max(-6, Math.min(6, n));
+  const toPct = (n) => 50 + clamp(n) * 8; // -6..+6 → 2..98%
+  document.getElementById("stat-notoriety").style.left = toPct(state.rep.notoriety) + "%";
+  document.getElementById("stat-morality").style.left = toPct(state.rep.morality) + "%";
+  document.getElementById("stat-chaos").style.left = toPct(state.rep.chaos) + "%";
+}
+
+function renderInventory(){
+  const bar = document.getElementById("inventory-bar");
+  bar.innerHTML = "";
+  for(let i=0; i<6; i++){
+    const slot = document.createElement("div");
+    slot.className = "inv-slot";
+    const it = state.inventory[i];
+    if(it){
+      slot.classList.add("filled");
+      slot.innerHTML = `${ITEMS[it]?.emoji||"?"}<span class="inv-tip">${ITEMS[it]?.name||it}</span>`;
+    } else {
+      slot.innerHTML = `<span style="opacity:.2">·</span>`;
+    }
+    bar.appendChild(slot);
+  }
+}
+
+function renderPhoneBadge(){
+  const badge = document.getElementById("phone-badge");
+  const n = state.phone.filter(p => !p.read).length;
+  if(n > 0){
+    badge.classList.remove("hidden");
+    badge.textContent = n > 99 ? "99+" : n;
+    document.getElementById("hud-phone").classList.add("buzzing");
+    setTimeout(() => document.getElementById("hud-phone").classList.remove("buzzing"), 1800);
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+function addPhoneNotification(n){
+  state.phone.push({...n, read:false});
+}
+
+function showPhone(){
+  const list = document.getElementById("phone-list");
+  list.innerHTML = "";
+  if(state.phone.length === 0){
+    list.innerHTML = `<div class="phone-item"><div class="from">System</div><div class="body">No notifications. Yet.</div></div>`;
+  } else {
+    state.phone.slice().reverse().forEach(n => {
+      const div = document.createElement("div");
+      div.className = "phone-item" + (n.type === "missed" ? " missed" : "") + (n.type === "ominous" ? " ominous" : "");
+      div.innerHTML = `<div class="from">${n.from}<span class="when">${n.time||""}</span></div><div class="body">${n.body}</div>`;
+      list.appendChild(div);
+    });
+    state.phone.forEach(n => n.read = true);
+  }
+  document.getElementById("phone-time").textContent = state.currentScene && SCENES[state.currentScene] ? SCENES[state.currentScene].time : "";
+  document.getElementById("phone-overlay").classList.add("active");
+  setTimeout(renderPhoneBadge, 600);
+}
+function hidePhone(){ document.getElementById("phone-overlay").classList.remove("active"); }
+
+/* ---------- Ending ---------- */
+function showEnding(){
+  hideAll();
+  document.getElementById("end-screen").classList.add("active");
+  const r = computeRating();
+  const el = document.getElementById("end-rating");
+  el.className = "end-rating " + r.id;
+  document.getElementById("end-rating-name").textContent = r.name;
+  document.getElementById("end-rating-flavor").textContent = r.flavor;
+  document.getElementById("end-noto").textContent = (state.rep.notoriety >= 0 ? "+" : "") + state.rep.notoriety;
+  document.getElementById("end-mora").textContent = (state.rep.morality >= 0 ? "+" : "") + state.rep.morality;
+  document.getElementById("end-chao").textContent = (state.rep.chaos >= 0 ? "+" : "") + state.rep.chaos;
+  // Timeline
+  const tEl = document.getElementById("end-timeline");
+  tEl.innerHTML = "";
+  state.history.forEach(h => {
+    const row = document.createElement("div");
+    row.className = "timeline-row";
+    row.innerHTML = `<div class="t">${h.time || ""}</div><div class="d">${h.note || h.id}</div>`;
+    tEl.appendChild(row);
+  });
+}
+
+function computeRating(){
+  const n = state.rep.notoriety;
+  const m = state.rep.morality;
+  const c = state.rep.chaos;
+  const boss = state.bossOutcome; // "win", "partial", "lose", "avoided", "deepened"
+  const items = state.inventory.length;
+  // CLIFFHANGER
+  if(boss === "deepened" || state.flags.discoveredThorne){
+    return {id:"cliffhanger", name:"Cliffhanger", flavor:"You pulled the thread and it just kept going. The night is over but the story isn't. Something much bigger is in motion — and now it knows your name."};
+  }
+  // LEGENDARY
+  if(m >= 2 && boss === "win" && c <= 3){
+    return {id:"legendary", name:"Legendary", flavor:"The best night of your life. You did the right thing, you did it well, and you have the scars to prove it. Tomorrow, the city is different because of you."};
+  }
+  // PYRRHIC — high morality + takedown + personal cost
+  if(m >= 2 && boss === "win" && (n >= 3 || state.flags.lostSomething)){
+    return {id:"pyrrhic", name:"Pyrrhic Victory", flavor:"You did the right thing. And it cost you everything else. The story runs. The bad guy falls. And you're not sure who you are anymore."};
+  }
+  // ANTIHERO
+  if(boss === "win" && (n >= 2 || c >= 3) && m <= 1){
+    return {id:"antihero", name:"Antihero", flavor:"You won. At what cost? The city is better off, probably. You're not sure about yourself. The ends justified the means — you think."};
+  }
+  // INFAMOUS
+  if(n >= 3 && c >= 2){
+    return {id:"infamous", name:"Infamous", flavor:"Everyone knows your name by 3 AM. Whether that's good or bad depends on who you ask. The city won't forget this Friday."};
+  }
+  // GHOST
+  if(n <= 0 && c <= 0 && (boss === "avoided" || boss === "lose")){
+    return {id:"ghost", name:"Ghost", flavor:"You slipped through the night without making a ripple. Safe. Quiet. Did anything change? Maybe that's the point."};
+  }
+  // Default
+  return {id:"survivor", name:"Survivor", flavor:"You got out alive with something to show for it. Not a victory lap. Not a defeat. You made it to Saturday morning. That counts."};
+}
+
+/* ================================================================
+   SCENE DATA — Bob & Trisha
+   ================================================================ */
+const SCENES = {};
+
+/* placeholder — filled in below */
+
+// Boot
+window.addEventListener("DOMContentLoaded", () => {
+  showTitle();
+});
+</script>
+
+<!-- ============= SCENE DATA ============= -->
+
+<!-- Bob's scenes -->
+<script>
+/* ================================================================
+   BOB — The Photojournalist  (v2: punchier, harder R, real stakes)
+   ================================================================ */
+Object.assign(SCENES, {
+
+/* === ACT 1: HOME === */
+
+BOB_01: {
+  title: "Home, Again",
+  time: "5:30 PM",
+  location: "Bob's Apartment",
+  image: "Bob's Apartment - The Decision",
+  timelineNote: "Story killed. Sixth time this year.",
+  onEnter: { items:["camera"] },
+  text: [
+    "Diane killed the Crane story. Again. <em>\"Not enough evidence, Bob.\"</em> Sixth time this year.",
+    "His apartment smells like old Thai food and the sweat of a man who hasn't slept right in three weeks. Red string. Pinned photos. A corkboard that looks like a serial killer's mood board.",
+    "In a drawer: a disposable camera from his cousin's wedding in 2021. Works. Barely.",
+    { text:"Crane is out there. Drinking somewhere nice. Bob is not.", style:"stinger" }
+  ],
+  choices: [
+    { emoji:"🍺", label:"Drink yourself stupid", flavor:"The Thai food's still edible. Probably.", next:"BOB_02A" },
+    { emoji:"🚶", label:"Rosario's. Something always happens at Rosario's.", flavor:"A source. A fight. A hangover.", next:"BOB_02B" },
+    { emoji:"📱", label:"Call Diane and scream a little", flavor:"She'll hang up. It'll feel good.", next:"BOB_02C" }
+  ]
+},
+
+BOB_02A: {
+  title:"The Phone Rings",
+  time:"6:15 PM",
+  location:"Bob's Apartment — couch",
+  image:"Bob's Apartment - The Decision",
+  timelineNote:"Stayed in. Then the phone rang.",
+  onEnter: { toast:{from:"Unknown", body:"📞 Voicemail: 'Bob. Carmen Reyes. Rosario's. 8 PM. Come alone. Don't call this number back.'", type:"ominous"} },
+  text: [
+    "Bob is two beers in when the phone rings. Unknown number. Voicemail. Woman's voice, fast, shaky:",
+    { text:"\"Bob. It's Carmen Reyes. I was Crane's assistant. I have documents. I need to give them to someone tonight because tomorrow I won't be able to. Rosario's. 8. Alone. Don't call back.\"", style:"quote" },
+    { text:"Crane's ex-assistant. Fired last week. Gone dark on social media. <em>Holy shit.</em>", style:"stinger" }
+  ],
+  choices: [
+    { emoji:"🏃", label:"Grab a jacket, go NOW", flavor:"Thirty minutes early. Scope the bar.", next:"BOB_03" },
+    { emoji:"📞", label:"Call the number back anyway", flavor:"What are you, afraid?", next:"BOB_02A_callback" },
+    { emoji:"🔍", label:"Google her first like a professional", flavor:"Twenty minutes of research.", effects:{ rep:{morality:1} }, next:"BOB_02A_research" }
+  ]
+},
+
+BOB_02A_callback: {
+  title:"Calling Back",
+  time:"6:30 PM",
+  location:"Bob's Apartment",
+  image:"Bob's Apartment - The Decision",
+  timelineNote:"Called the number. Dead line.",
+  text:[
+    "The number goes straight to a recording: <em>'This number is no longer in service.'</em>",
+    "Burner phone. Carmen's serious. Bob's got a decision to make — and the clock is ticking on something he doesn't understand yet."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Go to Rosario's", flavor:"Trust the meeting.", next:"BOB_03" },
+    { emoji:"🏢", label:"Swing by the newspaper office for supplies", flavor:"Preparation. Your recorder lives in your desk.", effects:{ items:["knife"], rep:{morality:1} }, next:"BOB_03" }
+  ]
+},
+
+BOB_02A_research: {
+  title:"Googling Carmen",
+  time:"6:45 PM",
+  location:"Bob's Apartment — laptop open",
+  image:"Bob's Apartment - The Decision",
+  timelineNote:"Researched Carmen Reyes. Something's wrong.",
+  text:[
+    "LinkedIn: Carmen Reyes — Executive Assistant to Councilman Victor Crane, 2019–2026. Status updated three days ago to 'Open to opportunities.' Social media went dark two weeks ago.",
+    "Last post: a cryptic quote. <em>\"The truth will cost you everything, but it's the only thing worth buying.\"</em>",
+    "A local news blurb from yesterday: Crane's office announced Carmen's departure due to 'personal reasons.' The timing is suspicious. This is real."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Rush to Rosario's", flavor:"You've done your homework. Time to move.", next:"BOB_03" }
+  ]
+},
+
+BOB_02B: {
+  title:"Going Out (Rosario's Early)",
+  time:"6:30 PM",
+  location:"Rosario's Bar & Grill",
+  image:"Rosario's Bar & Grill - Exterior",
+  timelineNote:"Went out to Rosario's. After-work crowd.",
+  text:[
+    "Bob takes his usual stool at Rosario's. Miguel the bartender pours his regular without asking. The after-work crowd is filling in.",
+    "Bob's scanning the room out of habit — occupational hazard. He notices a woman at the end of the bar he's never seen before. Nervous. Checking her phone every thirty seconds. She catches him watching and quickly looks away.",
+    "Five minutes later, she approaches him."
+  ],
+  choices:[
+    { emoji:"👋", label:"\"Can I help you?\" (friendly, open)", flavor:"Bob's natural mode.", next:"BOB_03" },
+    { emoji:"📷", label:"Discreetly photograph her first", flavor:"Journalist instincts — but invasive.", effects:{ rep:{notoriety:1, morality:-1} }, next:"BOB_03" },
+    { emoji:"👀", label:"Wait for her to speak first", flavor:"Read the room.", next:"BOB_03" }
+  ]
+},
+
+BOB_02C: {
+  title:"Calling the Editor",
+  time:"6:00 PM",
+  location:"Bob's Apartment — pacing, angry",
+  image:"Bob's Apartment - The Decision",
+  timelineNote:"Called Diane. She's sympathetic but firm.",
+  onEnter:{ rep:{morality:1} },
+  text:[
+    "Bob calls his editor, Diane, and makes his case. Diane is sympathetic but firm.",
+    { text:"\"Bob, I believe you. But believing isn't publishing. Get me something I can print — a photo, a document, a source on record — and I'll run it on the front page. But I can't publish a conspiracy theory.\"", style:"quote" },
+    "She pauses. <em>\"There's a rumor Crane's former assistant just got fired. Carmen something. If she's talking, that's your story.\"</em>",
+    "Bob hangs up. His phone buzzes immediately. Unknown number. Voicemail from Carmen Reyes."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Head to Rosario's", flavor:"Carmen wants to meet there at 8.", next:"BOB_03" },
+    { emoji:"📱", label:"Call Diane back — tell her about Carmen", flavor:"Get backup. Share the credit.", effects:{ rep:{morality:1}, flags:{dianeKnows:true} }, next:"BOB_03" }
+  ]
+},
+
+/* === ACT 2: THE QUEST BEGINS === */
+
+BOB_03: {
+  title:"Meeting Carmen",
+  time:"8:00 PM",
+  location:"Rosario's — back booth",
+  image:"Rosario's Bar - Meeting Carmen",
+  timelineNote:"Met Carmen. Dmitri walked in.",
+  onEnter:{ items:["envelope"], toast:{from:"Diane", body:"Don't do anything I wouldn't. Which is a WIDE range."} },
+  text:[
+    "Carmen's early. Mid-thirties, eyes like a trapped animal. Shoves a manila envelope at him before he sits down.",
+    "Thirty seconds of talk: Crane's taking bribes from Meridian Development to rubber-stamp permits on contaminated land. The smoking gun is in his City Hall safe. She has the combo. She needs Bob to grab it before dawn.",
+    "She stops mid-sentence. Eyes lock on the door.",
+    { text:"A guy in a dark coat just sat at the bar. Face like a clenched fist. Carmen is bone-white.", style:"italic" },
+    { text:"\"That's Dmitri. Crane's fixer. We have maybe ninety seconds.\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"🏃", label:"Kitchen. Back alley. GO.", flavor:"Fastest but he'll see us bolt.", risk:"risky", next:"BOB_04A" },
+    { emoji:"📷", label:"Snap his picture for the record", flavor:"The flash will make him, genius.", risk:"lethal", effects:{rep:{notoriety:1}}, next:"BOB_04B" },
+    { emoji:"🍻", label:"Finish your drink like you own the place", flavor:"Requires you SELL it. Fail = he makes you.",
+      risk:"risky",
+      check:{ name:"Play It Cool", kicker:"Deception vs Dmitri", dc:13, bonus:(s)=>Math.max(0, s.rep.notoriety*-1), flavor:"Low Notoriety helps — he doesn't know your face yet.",
+        onSuccess:"BOB_04C", onFail:"BOB_04C_caught" } }
+  ]
+},
+
+BOB_04C_caught: {
+  title:"He Made You",
+  time:"8:12 PM",
+  location:"Rosario's — the bathroom hallway",
+  image:"Rosario's Bar - Meeting Carmen",
+  timelineNote:"Dmitri followed me to the men's room. Bad night.",
+  onEnter:{ rep:{chaos:2, notoriety:2}, hp:-1, wound:"Cracked rib" },
+  text:[
+    "Bob gets up for the bathroom, casual as hell. Dmitri gets up twenty seconds later.",
+    "In the piss-smelling tile hallway, Dmitri puts a hand on Bob's shoulder. Polite, almost. Then drives a knee into his ribs.",
+    { text:"\"Mr. Crane would like his envelope back. And your camera. And for you to forget you ever heard the name Reyes.\"", style:"quote" },
+    "Bob coughs. Tastes iron. Miguel the bartender walks in for a reason he won't remember. Dmitri straightens his coat and disappears.",
+    { text:"Miguel: \"Back door, Bob. Don't ask questions. <em>Go.</em>\"", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🚪", label:"Back alley. Keep moving.", next:"BOB_04A" }
+  ]
+},
+
+BOB_04A: {
+  title:"Back Alley",
+  time:"8:25 PM",
+  location:"Alley behind Rosario's",
+  image:"Rosario's Bar - Meeting Carmen",
+  timelineNote:"Ran out the kitchen. Carmen dropped a bomb.",
+  onEnter:{ rep:{chaos:1, notoriety:1} },
+  text:[
+    "Miguel waves them through the kitchen without looking up. This is not Miguel's first rodeo.",
+    "In the alley, Carmen shoves a scrap of paper at Bob: safe combo, night guard's name (Eddie Vargas), and then her voice cracks:",
+    { text:"\"Bob. Two kids in Riverside have leukemia. Crane KNEW the land was poisoned and he approved it anyway. There's a buried health report. Find it.\"", style:"quote" },
+    { text:"She's gone before Bob can swallow. Manila envelope in hand. Mouth dry. Phone buzzing.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🏢", label:"Straight to City Hall", flavor:"Eddie first. Figure out money on the fly.", next:"BOB_05_cityhall" },
+    { emoji:"💰", label:"Need $500 for Eddie. Find a way.", flavor:"No cash = no keycard = no story.", next:"BOB_05_money" },
+    { emoji:"📱", label:"Call Diane. Get backup.", flavor:"She'll want editorial control.", effects:{rep:{morality:1}, flags:{dianeKnows:true}}, next:"BOB_05_money" }
+  ]
+},
+
+BOB_04B: {
+  title:"The Flash",
+  time:"8:18 PM",
+  location:"Rosario's — Bob's booth",
+  image:"Rosario's Bar - Meeting Carmen",
+  timelineNote:"Took a picture of a hitman with a disposable camera. Peak Bob.",
+  onEnter:{ rep:{notoriety:3, chaos:2}, hp:-1, wound:"Split lip" },
+  text:[
+    "Under the table. Angle. <em>FLASH.</em>",
+    "Half the bar turns. Dmitri <em>definitely</em> turns.",
+    { text:"He crosses the room in four steps, leans over their booth, and pats Bob's cheek. Hard. <em>Hard</em> hard.", style:"italic" },
+    { text:"\"Say cheese, champ.\"", style:"quote" },
+    "Bob's lip splits. Carmen's crying. Dmitri takes the camera — then hands it back with a smile. <em>\"It's empty. Last frame was 2019. You really are washed up.\"</em>",
+    "He leaves. He didn't even take the envelope. That's worse somehow.",
+    { text:"Carmen, whispering: \"Kitchen. NOW.\"", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🏃", label:"Kitchen. Move.", next:"BOB_04A" }
+  ]
+},
+
+BOB_04C: {
+  title:"Finishing the Drinks",
+  time:"8:20 PM",
+  location:"Rosario's — back booth",
+  image:"Rosario's Bar - Meeting Carmen",
+  timelineNote:"Held the poker face. Dmitri didn't make us.",
+  onEnter:{ rep:{chaos:-1, morality:1} },
+  text:[
+    "Bob laughs at nothing. Sips the drink. Says something about the Yankees. Carmen catches on, blinks rapidly, fake-giggles.",
+    "Dmitri watches them for twenty-two minutes. Orders bourbon. Takes a call. Leaves.",
+    { text:"Miguel slides by, collecting glasses, and mutters without looking: <em>\"Kitchen, Bob. Ten seconds.\"</em>", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🚪", label:"Out the back", flavor:"Smooth exit.", next:"BOB_04A" }
+  ]
+},
+
+BOB_05_money: {
+  title:"$127 and a Dream",
+  time:"9:00 PM",
+  location:"Downtown — night cold",
+  image:"Rosario's Bar & Grill - Exterior",
+  timelineNote:"Broke. Creative fundraising.",
+  text:[
+    "Bob's bank app: <b>$127.14</b>. Needs $500. Four hours of night left to grab it.",
+    { text:"The Thai food in his stomach has an opinion about all of this.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🎱", label:"Pool. Rosario's. Hustle a Bears fan.", flavor:"Real table. Real money. Real bruises if you scratch.", risk:"risky", minigame:"pool", onWin:"BOB_05_pool_win", onLose:"BOB_05_pool_lose" },
+    { emoji:"💳", label:"Call Sarah. Beg.", flavor:"She'll ask why. You'll have to lie or tell her everything.", effects:{rep:{morality:1}, flags:{sarahCalled:true}}, next:"BOB_05_ex" },
+    { emoji:"👛", label:"Lift a wallet", flavor:"Skill check. Fail and the guy screams and his friends are real.", risk:"risky",
+      check:{ name:"Pickpocket", kicker:"Dexterity vs A Drunk", dc:12, bonus:(s)=>Math.max(0, s.rep.notoriety), flavor:"High Notoriety means you're a SMOOTHER criminal.",
+        onSuccess:"BOB_05_steal", onFail:"BOB_05_steal_fail" } },
+    { emoji:"📱", label:"Diane. Emergency petty cash.", flavor:"She'll own the story by Sunday.", effects:{rep:{morality:1}, flags:{dianeKnows:true, dianeControls:true}, items:["cash500"], money:500}, next:"BOB_05_cityhall" }
+  ]
+},
+
+BOB_05_pool_win: {
+  title:"Table Runner",
+  time:"10:00 PM",
+  location:"Rosario's — pool corner",
+  image:"Rosario's Bar & Grill - Exterior",
+  timelineNote:"Ran the pool table. Walked out up.",
+  onEnter:{ rep:{chaos:1, notoriety:1} },
+  text:[
+    "Bob sinks the last ball. The Bears fan sets his cue down slow and deliberate, the way a man does when he's counting to ten.",
+    { text:"Bob pockets the cash and leaves before anybody has a second opinion.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🏢", label:"City Hall. Eddie's waiting.", next:"BOB_05_cityhall" }
+  ]
+},
+
+BOB_05_pool_lose: {
+  title:"Ten Bucks and a Lecture",
+  time:"10:00 PM",
+  location:"Rosario's — pool corner",
+  image:"Rosario's Bar & Grill - Exterior",
+  timelineNote:"Lost at pool. Bears fan wanted to chat.",
+  onEnter:{ rep:{notoriety:1}, hp:-1, wound:"Bruised face" },
+  text:[
+    "The Bears fan wins. The Bears fan is not satisfied with just winning.",
+    "Bob wakes up three minutes later under the table with a headache and a missing shoe. Miguel hauls him up.",
+    { text:"\"Go home, Bob.\" — \"Can't.\" — \"I know.\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"💰", label:"Back to the drawing board", flavor:"You still need $500.", next:"BOB_05_money" },
+    { emoji:"🏢", label:"Screw it — wing it at City Hall", flavor:"Convince Eddie without money. Good luck.", next:"BOB_05_cityhall" }
+  ]
+},
+
+BOB_05_ex: {
+  title:"Sarah",
+  time:"9:15 PM",
+  location:"Under a streetlight",
+  image:"Bob's Apartment - The Decision",
+  timelineNote:"Called Sarah. She wired it. Gave a speech.",
+  onEnter:{ items:["cash500"], money:500, toast:{from:"Sarah", body:"If you die I'm telling your mom you died of stupidity."} },
+  text:[
+    "Sarah picks up on the third ring. <em>\"Bob. 9 PM. Friday. What did you do.\"</em>",
+    "He doesn't lie. Working a story. Need $500. Source.",
+    "Long silence.",
+    { text:"\"You gonna get shot tonight, Bob?\" — \"Probably not.\" — \"That's not a no. Sending it. Don't call me again until you're home. If you get killed I'm telling your mother you died of stupidity.\"", style:"quote" },
+    "The $500 hits. Bob's throat does a thing."
+  ],
+  choices:[
+    { emoji:"🏢", label:"City Hall. Don't waste it.", next:"BOB_05_cityhall" }
+  ]
+},
+
+BOB_05_steal: {
+  title:"The Wallet",
+  time:"9:30 PM",
+  location:"Rosario's — crowded",
+  image:"The Wallet Scene - Dark Beat",
+  timelineNote:"Picked a pocket. $600 and a family photo.",
+  onEnter:{ items:["cash500"], money:600, rep:{notoriety:2, morality:-2} },
+  text:[
+    "Drunk businessman, expensive suit, card edge sticking out. Bob shoulder-bumps him. Sorry sorry. Clean lift.",
+    "In a stall: $600 cash, three cards, and a photo. Two kids. Golden retriever. <em>David Chen.</em>",
+    { text:"Not a victimless crime. Just a guy having a drink.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🗑️", label:"Lost and found the wallet. Keep the cash.", flavor:"At least his IDs come back.", effects:{rep:{morality:1}}, next:"BOB_05_cityhall" },
+    { emoji:"👛", label:"Keep everything", flavor:"Cold-blooded.", effects:{rep:{notoriety:1, morality:-1}}, next:"BOB_05_cityhall" },
+    { emoji:"😔", label:"Return the wallet. All of it.", flavor:"You're back to $127.", effects:{rep:{morality:2}, lose:["cash500"], money:-600}, next:"BOB_05_money" }
+  ]
+},
+
+BOB_05_steal_fail: {
+  title:"\"HEY ASSHOLE!\"",
+  time:"9:30 PM",
+  location:"Rosario's — middle of the floor",
+  image:"The Wallet Scene - Dark Beat",
+  timelineNote:"Got caught. Bar brawl. Lost two teeth.",
+  onEnter:{ rep:{notoriety:3, chaos:2}, hp:-1, wound:"Broken nose" },
+  text:[
+    "Bob's fingers graze the wallet and David Chen is <em>NOT</em> as drunk as he looked.",
+    { text:"\"HEY ASSHOLE!\"", style:"stinger" },
+    "Bob's instincts — which are bad — tell him to run. David's friends — who are strong — tell him to stay. A haymaker finds Bob's face. Something crunches.",
+    "Miguel throws him out the back by the collar.",
+    { text:"\"Don't come back tonight.\" — \"Mig, I need—\" — \"<em>Tonight,</em> Bob.\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"💰", label:"Find money somewhere else", next:"BOB_05_money_back" },
+    { emoji:"🏢", label:"Wing it at City Hall, broke and bloody", next:"BOB_05_cityhall" }
+  ]
+},
+
+BOB_05_money_back: {
+  title:"Options Narrowing",
+  time:"9:45 PM",
+  location:"Outside Rosario's",
+  image:"Rosario's Bar & Grill - Exterior",
+  timelineNote:"Out of Rosario's. Still broke. Still bleeding.",
+  text:[
+    "Blood in Bob's mouth. Dmitri's face in his head. Rosario's is off limits.",
+    "What's left?"
+  ],
+  choices:[
+    { emoji:"💳", label:"Call Sarah. Swallow your pride.", effects:{rep:{morality:1}, flags:{sarahCalled:true}}, next:"BOB_05_ex" },
+    { emoji:"📱", label:"Diane. Sell the story.", effects:{rep:{morality:1}, flags:{dianeKnows:true, dianeControls:true}, items:["cash500"], money:500}, next:"BOB_05_cityhall" },
+    { emoji:"🏢", label:"Wing it broke", flavor:"Hope Eddie's a mark.", next:"BOB_05_cityhall" }
+  ]
+},
+
+BOB_05_cityhall: {
+  title:"Eddie at the Desk",
+  time:"10:30 PM",
+  location:"City Hall — security lobby",
+  image:"City Hall - Night Exterior",
+  timelineNote:"City Hall. Eddie reading a paperback.",
+  text:[
+    "Marble floors. Flickering fluorescents. One human being: Eddie Vargas, 50s, reading <em>The Thin Man</em>.",
+    "Eddie looks up. Sees Bob's face. The bruise, maybe. The desperation, definitely.",
+    { text:"\"Can I help you, friend?\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"💰", label:"Slide him the $500", flavor:"Clean and cold.", requires:{item:"cash500"}, effects:{lose:["cash500"], money:-500, items:["keycard"], rep:{notoriety:1}}, next:"BOB_06_inside" },
+    { emoji:"💬", label:"Tell him about the leukemia kids", flavor:"If you mean it, he'll know.", risk:"risky",
+      check:{ name:"Reach Eddie", kicker:"Sincerity vs. A Father of Three", dc:11, bonus:(s)=>Math.max(0, s.rep.morality), flavor:"Morality helps — he's reading Hammett for a reason.",
+        onSuccess:"BOB_05_cityhall_conscience_win", onFail:"BOB_05_cityhall_conscience_fail" } },
+    { emoji:"🔪", label:"Bluff: \"I know about your gambling, Ed.\"", flavor:"Cold bluff. Fail = cops.", risk:"lethal",
+      check:{ name:"The Bluff", kicker:"Intimidate", dc:14, bonus:(s)=>(s.rep.notoriety+s.rep.chaos), flavor:"High Notoriety + Chaos sells the menace.",
+        onSuccess:"BOB_05_cityhall_bluff_win", onFail:"BOB_05_cityhall_bluff_fail" } },
+    { emoji:"🚪", label:"Sneak past. Back entrance.", flavor:"Fail = alarm = cops.", risk:"risky",
+      check:{ name:"Back Door", kicker:"Stealth", dc:13, bonus:0, flavor:"No modifiers. Pure gut.",
+        onSuccess:{next:"BOB_06_inside", effects:{rep:{chaos:2, notoriety:1}}}, onFail:"BOB_05_cityhall_break_fail" } }
+  ]
+},
+
+BOB_05_cityhall_conscience_win: {
+  title:"Eddie Listens",
+  time:"10:45 PM",
+  location:"City Hall — lobby",
+  image:"City Hall - Night Exterior",
+  timelineNote:"Told Eddie about the kids. He gave me the keycard.",
+  onEnter:{ items:["keycard"], rep:{morality:2} },
+  text:[
+    "Eddie sets the paperback down. Listens to every word. Doesn't interrupt.",
+    "When Bob finishes, Eddie takes off his lanyard and slides it across the desk.",
+    { text:"\"I got two grandkids in that school district. Twenty minutes. You didn't get this from me.\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"🚪", label:"Elevator up", next:"BOB_06_inside" }
+  ]
+},
+
+BOB_05_cityhall_conscience_fail: {
+  title:"Eddie Says No",
+  time:"10:42 PM",
+  location:"City Hall — lobby",
+  image:"City Hall - Night Exterior",
+  timelineNote:"Begged. Eddie declined.",
+  text:[
+    "Eddie listens. Eddie feels bad. Eddie does not want to lose his pension three years before he can retire.",
+    { text:"\"Son, go home. If this is real, file a tip. I'll look the other way when you leave, but I'm not letting you past me.\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"🚪", label:"Try the back door", risk:"risky",
+      check:{ name:"Back Door", dc:13, bonus:0, onSuccess:{next:"BOB_06_inside", effects:{rep:{chaos:2}}}, onFail:"BOB_05_cityhall_break_fail" } },
+    { emoji:"💰", label:"Come back with money", flavor:"If you have any.", requires:{item:"cash500"}, effects:{lose:["cash500"], money:-500, items:["keycard"]}, next:"BOB_06_inside" },
+    { emoji:"🏃", label:"Walk away. No story tonight.", effects:{rep:{morality:-1}, boss:"avoided"}, next:"BOB_19" }
+  ]
+},
+
+BOB_05_cityhall_bluff_win: {
+  title:"\"...How'd you know about that.\"",
+  time:"10:40 PM",
+  location:"City Hall — lobby",
+  image:"City Hall - Night Exterior",
+  timelineNote:"Bluffed Eddie. He folded.",
+  onEnter:{ items:["keycard"], rep:{chaos:1, notoriety:2, morality:-1} },
+  text:[
+    "Eddie's face goes blank. The particular shade of blank of a man whose secret just got said out loud.",
+    "He slides the keycard across without a word.",
+    { text:"You're not sure whether you actually got lucky or whether Eddie has a dozen secrets and any of them would've worked.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🚪", label:"Go", next:"BOB_06_inside" }
+  ]
+},
+
+BOB_05_cityhall_bluff_fail: {
+  title:"Eddie Calls Dispatch",
+  time:"10:40 PM",
+  location:"City Hall — lobby → squad car",
+  image:"City Hall - Night Exterior",
+  timelineNote:"Threatened a security guard. Got arrested.",
+  onEnter:{ rep:{notoriety:3, chaos:2, morality:-3}, boss:"lose" },
+  text:[
+    "Eddie doesn't have a secret. Eddie has three grown kids, a fishing boat, and twenty-eight years on this desk.",
+    "He picks up the desk phone. <em>\"Yeah, dispatch. Guy at the desk threatening me. Yeah. Not armed. Slow night, take your time.\"</em>",
+    "Two cops show up in four minutes. One of them yawns. The other one reads Bob his rights.",
+    { text:"Night's over, dipshit.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go to lockup. See the ending.", next:"BOB_19" }
+  ]
+},
+
+BOB_05_cityhall_break_fail: {
+  title:"Window Alarms Are Not Subtle",
+  time:"10:50 PM",
+  location:"City Hall — side alley",
+  image:"City Hall - Night Exterior",
+  timelineNote:"Tripped an alarm. RAN.",
+  onEnter:{ rep:{chaos:3, notoriety:2}, hp:-1, wound:"Glass in hand" },
+  text:[
+    "Bob elbows the bathroom window. The glass does what glass does. So does the alarm.",
+    "By the time Bob is halfway out he can hear sirens. He bails. Hand gashed, heart hammering.",
+    { text:"No keycard. No safe. And now the cops know the building got hit. Crane will hear about this by breakfast.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🏃", label:"Get off the street fast", flavor:"Find a place to hide and think.", next:"BOB_08" }
+  ]
+},
+
+/* === ACT 3 prelude: Inside === */
+
+BOB_06_inside: {
+  title:"Crane's Office",
+  time:"11:00 PM",
+  location:"3rd floor — Crane's private office",
+  image:"City Hall Break-In Midnight",
+  timelineNote:"Crane's office. Twenty-minute window.",
+  onEnter:{ rep:{notoriety:2} },
+  text:[
+    "Mahogany desk. Floor-to-ceiling view. Framed photo: Crane and the mayor at some gala, laughing like men who just got away with something.",
+    "The safe is behind a Rothko. Of <em>course</em> it is.",
+    { text:"Bob pulls out Carmen's scrap of paper. Twelve digits. Game time.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🧠", label:"Crack the safe by the book", flavor:"Take your time. Do it right.", risk:"risky",
+      check:{ name:"Safe Crack", kicker:"Dexterity + Focus", dc:10, bonus:(s)=>s.rep.morality>=2?2:0, flavor:"Calm hands help.",
+        onSuccess:"BOB_06_cracked", onFail:"BOB_06_cracked_alarm" } },
+    { emoji:"⚡", label:"Rip it open rough — twist the dial hard", flavor:"Faster. Louder. Could trip something.", risk:"lethal",
+      check:{ name:"Force It", kicker:"Brute Force", dc:13, bonus:(s)=>s.rep.chaos, flavor:"High Chaos helps. So does not caring.",
+        onSuccess:"BOB_06_cracked", onFail:"BOB_06_cracked_alarm" } }
+  ]
+},
+
+BOB_06_cracked: {
+  title:"Open Sesame",
+  time:"11:12 PM",
+  location:"Crane's office",
+  image:"City Hall Break-In Midnight",
+  timelineNote:"Cracked the safe. Found the ledger. And a gun.",
+  onEnter:{ items:["ledger","usb","photos"], toast:{from:"Unknown", body:"I know you're in my building, Bob. Smile for the camera. —V", type:"ominous"} },
+  text:[
+    "<em>Click.</em> Door swings.",
+    "Ledger. USB drive. A stack of 8x10s of cash changing hands in parking garages. And a Glock 19 loaded with 15 rounds.",
+    "Bob's disposable camera clicks through a roll of film photographing the photographs.",
+    { text:"Then his phone buzzes hard in his hand. Unknown number:", style:"italic" },
+    { text:"\"I know you're in my building, Bob. Smile for the camera. —V\"", style:"quote" },
+    { text:"Crane was watching the whole time.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🏃", label:"Grab the evidence and GO", effects:{rep:{chaos:1}}, next:"BOB_08" },
+    { emoji:"🔫", label:"Take the gun too", flavor:"For later. Insurance. Escalation.", risk:"fight", effects:{items:["gun"], rep:{chaos:1, notoriety:1}}, next:"BOB_08" },
+    { emoji:"📱", label:"Text back: \"Smile for the front page.\"", flavor:"Bold. Stupid. In character.", risk:"risky", effects:{rep:{notoriety:2}, flags:{craneTaunted:true}}, next:"BOB_08" }
+  ]
+},
+
+BOB_06_cracked_alarm: {
+  title:"BEEEEEEEEEP",
+  time:"11:10 PM",
+  location:"Crane's office",
+  image:"City Hall Break-In Midnight",
+  timelineNote:"Tripped the silent alarm. Still grabbed it.",
+  onEnter:{ items:["ledger","usb"], rep:{chaos:3, notoriety:2}, toast:{from:"Unknown", body:"The police are coming, Bob. So am I. —V", type:"ominous"} },
+  text:[
+    "The dial clicks wrong. A red LED blinks on the desk phone. Silent alarm, if Bob had to guess.",
+    "Bob grabs the ledger and USB — no time for the photos — and runs.",
+    { text:"Phone buzzes mid-sprint. \"The police are coming, Bob. So am I. —V\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"🏃", label:"Stairwell. Down.", next:"BOB_08" }
+  ]
+},
+
+/* === ACT 3: MIDNIGHT PHARMACY === */
+
+BOB_08: {
+  title:"On the Run",
+  time:"12:15 AM",
+  location:"Downtown alleys",
+  image:"The Midnight Pharmacy - Exterior",
+  timelineNote:"Running. Phone won't shut up.",
+  onEnter:{ toast:{from:"Mom", body:"Robert don't forget Sunday dinner aunt Kathy's bringing the casserole love you be safe", type:"missed"} },
+  text:[
+    "Bob is twelve blocks deep into neighborhoods he doesn't know. Dmitri's people might be in every passing SUV or none of them.",
+    "His phone will not shut the fuck up. Mom. Diane. Unknown. Unknown. Unknown.",
+    { text:"He ducks into an alley to catch his breath and sees it — a narrow storefront that wasn't there last week. Neon green. Flickering. <strong>THE MIDNIGHT PHARMACY</strong>. Door open. Nobody inside.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🚪", label:"Inside. Hide. Think.", flavor:"Pharmacies at midnight aren't weird, right?", next:"BOB_09_pharmacy" },
+    { emoji:"🏃", label:"Keep running. Not today, Satan.", flavor:"Paranoia has kept you alive this long.", next:"BOB_09_skip_pharmacy" }
+  ]
+},
+
+BOB_09_pharmacy: {
+  title:"The Pharmacist",
+  time:"12:30 AM",
+  location:"Inside the pharmacy",
+  image:"The Pharacist - Mysterious Power-Giver",
+  timelineNote:"Entered the pharmacy. The space was wrong.",
+  text:[
+    "Bigger inside than outside. Shelves that stretch into dark. Bottles of liquids that aren't any color Bob can name. Smells like ozone and a library.",
+    "The PHARMACIST is behind the counter. Ageless. Looks at Bob like a clerk pulling up an order that's been sitting there a week.",
+    { text:"\"Photographer. You need to see what's hidden.\"", style:"quote" },
+    "Small amber bottle slides across the counter.",
+    { text:"\"Two drops each eye. Through walls. Through doors. Through lies. Through people. Not everyone handles that.\"", style:"quote" },
+    { text:"\"Second customer tonight. Nervous woman took the tea. Hope she's handling the noise.\"", style:"italic" }
+  ],
+  choices:[
+    { emoji:"👁️", label:"Right now. Both eyes.", flavor:"Gift horse, mouth.", risk:"power", effects:{items:["eyedrops"], power:true}, next:"BOB_09_pharmacy_use" },
+    { emoji:"🧙", label:"Pocket them. Maybe later.", flavor:"Not drinking weird shit from a ghost shop.", effects:{items:["eyedrops"]}, next:"BOB_10" },
+    { emoji:"🚫", label:"Hard pass. Out.", flavor:"You've had enough weird for one night.", next:"BOB_10" }
+  ]
+},
+
+BOB_09_skip_pharmacy: {
+  title:"Running Past",
+  time:"12:20 AM",
+  location:"Downtown — back alleys",
+  image:"The Midnight Pharmacy - Exterior",
+  timelineNote:"Skipped the pharmacy. Stayed grounded.",
+  onEnter:{ rep:{chaos:-1} },
+  text:[
+    "Bob doesn't trust a neon green pharmacy at midnight staffed by someone who looks like an 18th century ghost. He keeps running.",
+    "Two blocks later, the green glow is gone, like the shop was never there."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Push toward Crane's penthouse", flavor:"You have the evidence. Finish this.", next:"BOB_10" }
+  ]
+},
+
+BOB_09_pharmacy_use: {
+  title:"Eyes Open",
+  time:"12:45 AM",
+  location:"Outside the pharmacy",
+  image:"Bob Uses X-Ray Vision - Sees Too Much",
+  timelineNote:"Two drops. Saw too much. Can't stop seeing.",
+  onEnter:{ flags:{usedDrops:true} },
+  text:[
+    "Burn. Burn. Burn. Three seconds. Then the world opens like a bad dream.",
+    "Bob sees through the wall: tattoo parlor, cat asleep on the chair. Through the floor: basement that's too big for the building. Through his own ribcage: a heart thumping like it's trying to get out.",
+    { text:"Out on the street, a woman walks past. Bob sees her pacemaker. The cash in her bra. The divorce papers in her bag. The tumor in her liver.", style:"italic" },
+    { text:"Oh god.", style:"stinger" },
+    "Bob squeezes his eyes shut until it narrows down to something manageable. Focus. Only look at what matters.",
+    "He looks toward City Hall. Through three walls, Dmitri is talking to two men in a parking garage. They're holding a photo.",
+    { text:"Bob's press headshot. They're already hunting.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"👁️", label:"Plan a route through blind spots to Crane's building", flavor:"The power works.", risk:"power", next:"BOB_10" },
+    { emoji:"📱", label:"Call Carmen. She should know.", flavor:"She said don't call. Nothing's rules anymore.", effects:{flags:{calledCarmen:true}, rep:{morality:1}}, next:"BOB_10" }
+  ]
+},
+
+/* === ACT 4: FULL CHAOS === */
+
+BOB_10: {
+  title:"The Long Way East",
+  time:"1:30 AM",
+  location:"Crossing the city",
+  image:"The 3 AM Diner",
+  timelineNote:"East side. Dmitri between me and Crane.",
+  onEnter:{ toast:{from:"Sarah", body:"You ok?? It's 1:30. Don't die."} },
+  text:[
+    "Dmitri's guys are spread along the main routes. Bob has to take alleys, service lanes, and one genuinely haunted-looking parking structure.",
+    "Through a diner window, a woman in a ruined cocktail dress is hunched over a phone, whispering frantically at it. Completely feral.",
+    { text:"(Some other fight. Some other night. Bob will never know.)", style:"italic" }
+  ],
+  choices:[
+    { emoji:"👁️", label:"Use the vision to slip between Dmitri's men",
+      flavor:"The power's real. Use it.", risk:"power", requires:{power:true},
+      check:{ name:"Blind Spots", kicker:"Stealth + X-Ray", dc:11, bonus:(s)=>2, flavor:"The power gives +2.",
+        onSuccess:"BOB_14", onFail:"BOB_14_caught" } },
+    { emoji:"🏃", label:"Take the long way — alleys only", flavor:"Slower. Safer. Maybe.",
+      check:{ name:"Back Streets", kicker:"Instinct", dc:13, bonus:(s)=>Math.max(0,-s.rep.notoriety),
+        onSuccess:"BOB_14", onFail:"BOB_14_caught" } },
+    { emoji:"🍳", label:"Diner. Coffee. Think.", flavor:"Stop the clock for ten minutes.", next:"BOB_14_diner" }
+  ]
+},
+
+BOB_14_caught: {
+  title:"Cornered",
+  time:"2:00 AM",
+  location:"An alley off Broadway",
+  image:"The Midnight Pharmacy - Exterior",
+  timelineNote:"Dmitri cornered me in an alley.",
+  onEnter:{ rep:{chaos:2}, hp:-1, wound:"Cracked ribs" },
+  text:[
+    "The SUV pulls into the alley behind him, headlights pinning him against brick.",
+    "Dmitri gets out alone. Leaves his guys in the car. <em>Not a good sign.</em>",
+    { text:"\"Mr. Crane wants the envelope. He's offering you alive.\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"📦", label:"Give up the envelope. Walk away.", flavor:"The story dies. You live.", effects:{lose:["envelope","ledger","usb","photos"], boss:"lose", rep:{morality:-1}}, next:"BOB_19" },
+    { emoji:"🏃", label:"Bolt. He's alone.", risk:"lethal",
+      check:{ name:"Sprint", kicker:"Endurance", dc:14, bonus:(s)=>s.wounds.length>0?-2:0, flavor:"Wounds hurt your chances.",
+        onSuccess:"BOB_14",
+        onFail:()=>showDeath("You made it six steps. Dmitri doesn't miss. A journalism professor will use your story as a cautionary tale in an undergrad ethics seminar next spring.", null, "2:04 AM") } },
+    { emoji:"🔫", label:"Draw on him", requires:{item:"gun"}, risk:"lethal",
+      check:{ name:"Quick Draw", kicker:"Reflex", dc:16, bonus:0, flavor:"He's a professional. You're a reporter.",
+        onSuccess:"BOB_14_shot_dmitri",
+        onFail:()=>showDeath("Dmitri's Sig clears leather before your safety's off. The last thing you see is the alley wall, and then nothing, and then nothing forever.", null, "2:03 AM") } }
+  ]
+},
+
+BOB_14_shot_dmitri: {
+  title:"You Shot Him",
+  time:"2:04 AM",
+  location:"The alley",
+  image:"The Midnight Pharmacy - Exterior",
+  timelineNote:"Killed Dmitri. You're a different person now.",
+  onEnter:{ rep:{chaos:4, notoriety:4, morality:-4}, flags:{killedDmitri:true} },
+  text:[
+    "Bob pulls the Glock, Bob pulls the trigger, Bob is deaf in his right ear, Bob has never shot anything in his life.",
+    "Dmitri folds like a cheap lawn chair. Less dramatic than in the movies. More red.",
+    { text:"The two guys in the SUV see what happened. They don't get out. They peel off.", style:"italic" },
+    { text:"You just killed a man, Bob. For a story. For a reason. Whichever. You are not going home the same.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🏢", label:"Crane's penthouse. Finish what you started.", next:"BOB_15" }
+  ]
+},
+
+BOB_14: {
+  title:"Crossing the Line",
+  time:"2:45 AM",
+  location:"East side streets",
+  image:"The Midnight Pharmacy - Exterior",
+  timelineNote:"Crossed the city. Lost Dmitri. Maybe.",
+  text:[
+    "Bob cuts through alleys. Twice he has to duck into doorways when dark SUVs roll past. Once he's sure Dmitri saw him — but the SUV keeps going. Maybe Dmitri wants him to get to the penthouse. Maybe the trap is the penthouse.",
+    "Either way, Bob is committed. The sun will be up in a few hours. Tomorrow is the news cycle. Tonight is the story."
+  ],
+  choices:[
+    { emoji:"🏢", label:"Crane's penthouse — finish this", flavor:"All roads lead there.", next:"BOB_15" }
+  ]
+},
+
+BOB_14_diner: {
+  title:"Diner Coffee",
+  time:"2:30 AM",
+  location:"The 3 AM Diner",
+  image:"The 3 AM Diner",
+  timelineNote:"Stopped at the 3 AM diner. Something overheard.",
+  onEnter:{ rep:{chaos:-1, morality:1}, flags:{dinerStop:true} },
+  text:[
+    "Bob slides into a booth. Two booths down, a woman in a cardigan is talking on her phone in a frantic whisper about a forged manuscript and someone named <em>Voss</em>. She keeps glancing around.",
+    "At the counter, a guy in a torn suit is nursing a coffee and a split lip. Bob has never seen any of these people. In a few hours they'll all be strangers again. But right now, for one strange moment, they're all chasing the same kind of night.",
+    "Bob drinks his coffee. Plans his route through Dmitri's territory."
+  ],
+  choices:[
+    { emoji:"🏢", label:"Crane's penthouse — the last stop", flavor:"Finish the night.", next:"BOB_15" }
+  ]
+},
+
+/* === ACT 5: BOSS === */
+
+BOB_15: {
+  title:"The Penthouse",
+  time:"4:00 AM",
+  location:"Crane's penthouse — top floor",
+  image:"Bob vs. Victor Crane - The Confrontation",
+  timelineNote:"Got to the penthouse. He was waiting.",
+  text:[
+    "Marble floor. Picasso. Wet bar that cost more than Bob's apartment. Crane in a silk robe sipping 40-year Macallan like Bob is a delivery.",
+    { text:"\"Sit, Bob. Drink? No? Alright.\"", style:"quote" },
+    (state) => state.flags && state.flags.killedDmitri
+      ? { text:"Crane doesn't know Dmitri is dead yet. You can see it in his eyes — waiting for his fixer to walk in. He's going to be waiting a while.", style:"italic" }
+      : { text:"Dmitri is somewhere in the apartment. Bob can't see him. That's worse than being able to.", style:"italic" },
+    { text:"Whatever Bob does in the next five minutes is the rest of Bob's life.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"📰", label:"\"The story runs in the morning. Nothing you can do.\"",
+      flavor:"Clean takedown. Evidence matters.", requires:{all:["ledger","usb"]}, risk:"risky", next:"BOB_16_power" },
+    { emoji:"🎤", label:"Fake a sellout. Get him offering a bribe on tape.",
+      flavor:"Needs the camera. A little Chaos sells the act.", requires:{item:"camera"}, risk:"risky",
+      check:{ name:"The Sting", kicker:"Acting + Chaos", dc:12, bonus:(s)=>s.rep.chaos, flavor:"Your 'corrupt reporter' impression has to land.",
+        onSuccess:"BOB_16_sting", onFail:"BOB_16_sting_fail" } },
+    { emoji:"🤝", label:"\"Turn yourself in. Redemption story. Front page.\"",
+      flavor:"The Aaron Sorkin speech.", requires:{rep:{morality:3}}, next:"BOB_16_mercy" },
+    { emoji:"👁️", label:"X-ray his walls. Find what's really hidden.",
+      flavor:"The power ticks Crane's stability down.", requires:{power:true}, risk:"power", effects:{usePower:1}, next:"BOB_16_vision" },
+    { emoji:"🔫", label:"Draw the Glock",
+      flavor:"Everything changes. Probably fatally.", requires:{item:"gun"}, risk:"lethal",
+      check:{ name:"Get the Drop", kicker:"Reflex vs. Dmitri", dc:(s)=>s.flags&&s.flags.killedDmitri?10:17, bonus:0, flavor:(s)=>s.flags&&s.flags.killedDmitri?"Dmitri's dead. Crane's the only threat.":"Dmitri's behind the curtain and he's faster than you.",
+        onSuccess:"BOB_16_gun_win",
+        onFail:()=>showDeath("Dmitri stepped out from behind the bar and put two rounds center-mass before your finger found the trigger. The Glock clatters on imported marble. Crane doesn't even spill his drink.", null, "4:04 AM") } },
+    { emoji:"🚫", label:"Pretend you never found this place. Run.",
+      flavor:"Live to write another Monday.", next:"BOB_16_run" }
+  ]
+},
+
+BOB_16_sting_fail: {
+  title:"He Knew",
+  time:"4:15 AM",
+  location:"Crane's penthouse",
+  image:"Bob vs. Victor Crane - The Confrontation",
+  timelineNote:"Tried a sting. Crane clocked it.",
+  onEnter:{ boss:"lose", rep:{chaos:1, morality:-1}, hp:-1, wound:"Concussion" },
+  text:[
+    "Bob starts the pitch. \"Mr. Crane, I'm a reasonable—\" and stops because Crane is laughing.",
+    { text:"\"The disposable camera, Bob. You came in here and forgot to take off the STRAP. Oh, son.\"", style:"quote" },
+    "Dmitri steps out of the curtain. Bob wakes up in the alley behind the building two hours later, missing a shoe and most of the evidence.",
+    { text:"The story doesn't run. Not tomorrow. Not ever, the way Bob wanted.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Stumble home", next:"BOB_19" }
+  ]
+},
+
+BOB_16_gun_win: {
+  title:"Getting The Drop",
+  time:"4:04 AM",
+  location:"Crane's penthouse — the bar",
+  image:"Bob vs. Victor Crane - The Confrontation",
+  timelineNote:"Got the drop on both of them. Still a gun in a penthouse.",
+  onEnter:{ boss:"win", rep:{notoriety:5, chaos:4, morality:-3}, flags:{shotPenthouse:true} },
+  text:[
+    "Bob swings the Glock on Dmitri first. Dmitri's still drawing. Bob fires twice. Dmitri goes down.",
+    "Crane's hand is halfway to a drawer. Bob shakes his head.",
+    { text:"\"Don't. Hands on the bar. On the bar, Victor.\"", style:"quote" },
+    "Bob ties Crane's hands with a lamp cord. Photographs everything on the disposable camera. Calls the cops himself.",
+    "The story runs. Bob gets the Pulitzer, an indictment, a five-year nightmare of civil lawsuits, and a permanent twitch in his right eye.",
+    { text:"Also: two kids in Riverside get to move somewhere clean.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Morning", next:"BOB_19" }
+  ]
+},
+
+BOB_16_power: {
+  title:"\"This Runs Tomorrow\"",
+  time:"4:30 AM",
+  location:"Crane's penthouse — the balcony",
+  image:"Bob vs. Victor Crane - The Confrontation",
+  timelineNote:"Confronted Crane. Front page tomorrow.",
+  onEnter:{ boss:"win", rep:{notoriety:3, morality:1} },
+  text:[
+    "Bob lays it out: the ledger with Meridian Development's cash. The USB with Crane's financial structure. Photos of cash exchanges. And — this is the kicker — Carmen Reyes on record, in a safe place, with a sworn affidavit.",
+    "Crane's smile doesn't change. But something behind his eyes does.",
+    { text:"\"You understand what I can do to you, Bob.\"", style:"quote" },
+    { text:"\"I understand what I can do to you, Victor. It's called journalism.\"", style:"quote" },
+    "Crane calls Dmitri off. Dmitri, from somewhere in the penthouse, doesn't look happy about it. Crane pours Bob a scotch and offers it like a white flag. Bob doesn't take it.",
+    "Crane knows the story runs tomorrow. He knows he can fight it for a week, maybe two. He knows he loses in the end.",
+    { text:"The story runs. Front page. Crane resigns by Tuesday. The Riverside family gets a settlement by Thursday.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"Dawn is coming.", next:"BOB_19" }
+  ]
+},
+
+BOB_16_sting: {
+  title:"The Sting",
+  time:"4:30 AM",
+  location:"Crane's penthouse",
+  image:"Bob vs. Victor Crane - The Confrontation",
+  timelineNote:"Ran a sting. Got Crane on camera offering a bribe.",
+  onEnter:{ boss:"win", rep:{notoriety:2, chaos:1, morality:-1} },
+  text:[
+    "Bob pretends to consider Crane's offer. Plays it right up to the edge. Gets Crane, on camera, explaining exactly how much he'll pay Bob to kill the story and how the payments will be structured.",
+    "The disposable camera is a video model. Bob forgot to mention that.",
+    "Bob thanks Crane for his time and walks out. Dmitri, bewildered, starts to follow. Crane calls him off — Crane is still convinced the bribe took. He doesn't realize until 6 AM, when the story is already uploading, that he was the one who got played.",
+    { text:"Less clean than the straight takedown. But it'll stick.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"The sun is rising.", next:"BOB_19" }
+  ]
+},
+
+BOB_16_mercy: {
+  title:"The Redemption Pitch",
+  time:"4:30 AM",
+  location:"Crane's penthouse",
+  image:"Bob vs. Victor Crane - The Confrontation",
+  timelineNote:"Offered Crane a redemption story. He almost took it.",
+  onEnter:{ boss:"partial", rep:{morality:3, notoriety:1} },
+  text:[
+    "Bob doesn't attack. He sits down across from Crane and explains: the story runs either way. Crane can be the corrupt councilman who destroyed a family in Riverside, or he can be the one who came forward. He has forty-eight hours.",
+    "Crane laughs. Then doesn't. Then pours himself another scotch.",
+    { text:"\"You know what the worst part is, Bob? I actually started out wanting to do the right thing. I know exactly where I lost it. Tuesday, August 12th, 2021. A man in a dark suit offered me a number and I didn't say no.\"", style:"quote" },
+    "Crane doesn't confess. Not that night. But he doesn't threaten Bob either. And on Monday morning, his lawyer calls the DA's office.",
+    { text:"Not a clean win. But a human one.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"Walking, this time. No running.", next:"BOB_19" }
+  ]
+},
+
+BOB_16_vision: {
+  title:"Behind the Walls",
+  time:"4:30 AM",
+  location:"Crane's penthouse",
+  image:"Bob Uses X-Ray Vision - Sees Too Much",
+  timelineNote:"Used X-ray vision. Found what Crane hid.",
+  onEnter:{ boss:"deepened", rep:{notoriety:2, chaos:1}, flags:{discoveredThorne:true} },
+  text:[
+    "Bob focuses on the penthouse walls. Three safes. A false floor panel in the closet. A hidden compartment in the wet bar. He sees them all.",
+    "The wet bar compartment is the jackpot. Inside, beyond the ledger and photos Carmen told him about: a second set of documents. Emails. Wire transfers. Not to Meridian Development.",
+    { text:"To a man named ALDRIC THORNE.", style:"stinger" },
+    "Crane, it turns out, is middle management. The real money, the real power, lives in the Thorne file.",
+    "Bob sees Crane watching him see it. Bob sees something behind Crane's eyes Bob has never seen before. Not anger.",
+    { text:"Fear.", style:"stinger" },
+    "\"You don't know what you just found,\" Crane says. \"Put it back. Run. Forget tonight. Please.\"",
+    "Bob photographs everything. The story he leaves with is bigger than one crooked councilman. It's bigger than he is. The night is over but the story isn't. Someone bigger just noticed him."
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"The sun is up. Something else is watching.", next:"BOB_19" }
+  ]
+},
+
+BOB_16_gun: {
+  title:"The Gun",
+  time:"4:15 AM",
+  location:"Crane's penthouse",
+  image:"Bob vs. Victor Crane - The Confrontation",
+  timelineNote:"Pulled the gun on Crane. Nothing is the same.",
+  onEnter:{ boss:"lose", rep:{notoriety:4, chaos:3, morality:-3} },
+  text:[
+    "Bob pulls the gun. The room freezes.",
+    "Crane raises his hands, slowly, amused. <em>\"Bob. Bob. You are not a man with a gun. You are a man with a camera.\"</em>",
+    "Dmitri steps out of the shadow behind the couch. He <em>is</em> a man with a gun. His is bigger.",
+    "What follows is a long, ugly negotiation. Bob walks out alive because Crane wants it that way — a journalist waving a gun around at 4 AM in a city councilman's penthouse is a story that writes itself, and not the one Bob wanted to write.",
+    { text:"The real story never prints. Crane stays. Somebody in Riverside dies next year. Bob knows it's on him.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"Stumble home. Shower for an hour. Sit on the floor.", next:"BOB_19" }
+  ]
+},
+
+BOB_16_run: {
+  title:"Retreat",
+  time:"4:20 AM",
+  location:"The streets below Crane's building",
+  image:"City Hall - Night Exterior",
+  timelineNote:"Couldn't close it. Ran with what he had.",
+  onEnter:{ boss:"avoided", rep:{chaos:-1, morality:-1} },
+  text:[
+    "Bob didn't have the goods to go in. Or the nerve. Or both. He stands on the street looking up at the penthouse window, where Crane is probably still pouring scotch.",
+    "He has something. Not nothing. The envelope, maybe the camera, maybe a story for a future Monday instead of tomorrow's front page. A smaller story. A quieter one. The kind that makes it into a follow-up article in six months."
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"Live to fight another Tuesday.", next:"BOB_19" }
+  ]
+},
+
+/* === EPILOGUE === */
+
+BOB_19: {
+  title:"Dawn",
+  time:"5:45 AM",
+  location:"Bob's Apartment",
+  image:"Bob's 6 AM Epilogue",
+  timelineNote:"Collapsed into bed. 47 unread messages.",
+  ending:true,
+  text:[
+    "Bob is home. The sun is rising over the city. His apartment looks exactly the same as when he left — but he is fundamentally different.",
+    "The evidence (whatever he managed to keep) is on his kitchen table. His phone has 47 unread notifications. The eyedrops have worn off — or have they? He blinks and for a moment sees through his bathroom wall. Then it's gone.",
+    "He sits on his bed. Doesn't even take his shoes off. The timeline of his night scrolls through his head: every location, every choice, every item acquired and lost. The reputation meters settle on their final values.",
+    { text:"One Friday. One long, weird Friday.", style:"italic" }
+  ]
+}
+
+});
+</script>
+
+<!-- Trisha's scenes -->
+<script>
+/* ================================================================
+   TRISHA — The Librarian
+   ================================================================ */
+Object.assign(SCENES, {
+
+TRISHA_01: {
+  title:"Home Sweet Home",
+  time:"5:30 PM",
+  location:"Trisha's Apartment",
+  image:"Trisha - The Librarian",
+  timelineNote:"Got home. Dewey the cat demanded dinner.",
+  onEnter:{ items:["badge"] },
+  text:[
+    "Trisha gets home from the library. It was a long week — budget meetings, a leaky pipe in the periodicals section, and a patron who tried to return a book from 2003 with no late fee.",
+    "Dewey the cat demands dinner. Trisha's Friday night plan: reread <em>Middlemarch</em>, chamomile tea, bed by 10.",
+    "Then she opens her work email. A message from her colleague Martin in the conservation lab, sent at 4:47 PM:",
+    { text:"\"Trisha — Something's wrong with the Aldworth Manuscript. The binding is off. I need you to look at this. I'm staying late tonight. —M\"", style:"quote" },
+    "The Aldworth Manuscript is a 16th-century illuminated text worth $2.3 million. It's the crown jewel of the library's rare collection."
+  ],
+  choices:[
+    { emoji:"🏠", label:"It can wait until Monday", flavor:"Feed the cat. Open Middlemarch. Live your life.", next:"TRISHA_02A" },
+    { emoji:"🏛️", label:"Go back to the library immediately", flavor:"If something's wrong with the Aldworth, it can't wait.", next:"TRISHA_02B" },
+    { emoji:"📱", label:"Call Martin first — get details", flavor:"Information before action. Classic Trisha.", next:"TRISHA_02C" }
+  ]
+},
+
+TRISHA_02A: {
+  title:"Staying In (Martin Calls)",
+  time:"7:15 PM",
+  location:"Trisha's couch — Middlemarch, cat",
+  image:"Trisha - The Librarian",
+  timelineNote:"Stayed home. Then Martin called, whispering.",
+  onEnter:{ phone:[{from:"Martin", time:"7:15 PM", body:"Call. Whispering. 'Trisha, it's a forgery. I compared the UV markers. The ink composition is wrong. This is a reproduction. Someone swapped the Aldworth in the last two weeks. I think it was Voss.'"}] },
+  text:[
+    "Trisha is two chapters into Middlemarch when Martin calls. He's whispering, which is strange because the library is closed.",
+    { text:"\"Trisha, it's a forgery. The Aldworth is a forgery. Someone swapped it in the last two weeks. I compared the UV markers and the ink composition is wrong. This is a reproduction.\"", style:"quote" },
+    "Trisha sits up. Dewey falls off her lap, offended.",
+    "Martin continues: <em>\"I think it was Voss. Dr. Lucien Voss. He had supervised access to the rare room last week for that 'authentication study.' Trisha, a $2.3 million manuscript has been stolen from our library and no one knows.\"</em>",
+    "Then Martin says something that makes Trisha's blood run cold:",
+    { text:"\"I think someone's in the building with me.\"", style:"stinger" },
+    "The line goes dead."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Run to the library NOW", flavor:"Martin could be in danger.", next:"TRISHA_03" },
+    { emoji:"👮", label:"Call the police", flavor:"Proper response. But slow.", effects:{rep:{morality:2}, flags:{calledCops:true}}, next:"TRISHA_02A_police" },
+    { emoji:"📱", label:"Try calling Martin back", flavor:"Maybe it was just a dropped call.", next:"TRISHA_02A_callback" }
+  ]
+},
+
+TRISHA_02A_police: {
+  title:"Calling 911",
+  time:"7:20 PM",
+  location:"Trisha's Apartment",
+  image:"Trisha - The Librarian",
+  timelineNote:"Called 911. They'll check the library.",
+  onEnter:{ rep:{morality:1}, flags:{calledCops:true} },
+  text:[
+    "Trisha explains, clearly and precisely, that a coworker may be in danger at the library. The dispatcher is polite and promises a welfare check.",
+    "It will take an hour. Maybe two. Friday night is a busy night for the precinct.",
+    "Trisha can't just sit here. Dewey is staring at her judgmentally. She grabs her coat."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Go to the library anyway", flavor:"Cops or not, you need to see.", next:"TRISHA_03" }
+  ]
+},
+
+TRISHA_02A_callback: {
+  title:"Ringing, Ringing",
+  time:"7:18 PM",
+  location:"Trisha's Apartment",
+  image:"Trisha - The Librarian",
+  timelineNote:"Called Martin back. Straight to voicemail.",
+  onEnter:{ rep:{chaos:1} },
+  text:[
+    "Straight to voicemail. Trisha calls again. Voicemail.",
+    "A small knot forms in her stomach. Martin never lets his phone die. Martin archives his voicemail weekly."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Run to the library", flavor:"Something is very wrong.", next:"TRISHA_03" }
+  ]
+},
+
+TRISHA_02B: {
+  title:"Back to the Library",
+  time:"6:45 PM",
+  location:"City Public Library — closed",
+  image:"The Library at Night - Examining the Forgery",
+  timelineNote:"Went back to the library. Something was wrong.",
+  text:[
+    "Trisha uses her staff card. The alarm system doesn't beep — which is strange, because Martin would have armed it when he went to the conservation lab.",
+    "She finds the conservation lab empty. Martin's laptop is open. His coffee is still warm. His car keys are on the desk.",
+    "Martin didn't leave voluntarily."
+  ],
+  choices:[
+    { emoji:"🔎", label:"Investigate the lab", flavor:"Find out what Martin found.", next:"TRISHA_03" }
+  ]
+},
+
+TRISHA_02C: {
+  title:"Calling Martin First",
+  time:"6:00 PM",
+  location:"Trisha's Kitchen",
+  image:"Trisha - The Librarian",
+  timelineNote:"Called Martin. He was scared and in a hurry.",
+  text:[
+    "Martin picks up on the first ring and hisses a <em>\"hi\"</em> like he's been holding his breath.",
+    "He runs through what he's seen: the UV markers are wrong, the binding is <em>new</em>, someone has replaced a 16th-century illuminated manuscript with a fake that is good — <em>really</em> good — but not good enough.",
+    { text:"\"Trisha, Voss was in the rare room last week. Dr. Lucien Voss. He did this. I'm staying at the lab tonight until someone with more authority than me can look at this. Trisha? I think I hear someone in the stacks.\"", style:"quote" },
+    "Static. Click."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Go to the library", flavor:"Martin is in trouble.", next:"TRISHA_03" }
+  ]
+},
+
+/* === ACT 2: THE QUEST BEGINS === */
+
+TRISHA_03: {
+  title:"The Library at Night",
+  time:"8:00 PM",
+  location:"City Public Library — closed, echoing",
+  image:"The Library at Night - Examining the Forgery",
+  timelineNote:"Library at night. Martin gone. Found his research.",
+  onEnter:{ items:["uv","martinsNote"], phone:[{from:"Unknown Number", time:"8:30 PM", body:"Text: 'Curiosity is dangerous in librarians, Trisha. Go home.' No signature.", type:"ominous"}] },
+  text:[
+    "The library at night is a different world. Trisha knows every corner but the darkness changes everything. Emergency lights cast long shadows through the stacks.",
+    "She finds Martin's lab: his laptop is open, the UV comparison images are on screen, and his coffee is still warm. But Martin is gone. His bag is here. His car keys are here.",
+    { text:"Martin didn't leave voluntarily.", style:"stinger" },
+    "On his laptop, Trisha finds what Martin discovered: side-by-side UV analysis proving the manuscript is a forgery. And browser tabs showing Martin was researching Dr. Lucien Voss's connections — including a private collector's dinner happening TONIGHT on billionaire Aldric Thorne's yacht.",
+    "The forged manuscript is good. But it's missing one thing: an official authentication certificate. Without it, Voss can't sell it. He'll need one tonight — at the dinner.",
+    "Trisha takes the UV flashlight from Martin's desk."
+  ],
+  choices:[
+    { emoji:"🛥️", label:"Crash the yacht party — find Voss, find the manuscript", flavor:"Bold for Trisha. But it's HER responsibility.", next:"TRISHA_04_party" },
+    { emoji:"👮", label:"Go to the police with Martin's evidence", flavor:"Proper response. But Voss will be gone by sunrise.", effects:{rep:{morality:2}, flags:{calledCops:true}}, next:"TRISHA_04_police" },
+    { emoji:"📚", label:"Stay in Martin's lab — dig deeper into Voss's network", flavor:"Research is what you're good at.", next:"TRISHA_04_research" }
+  ]
+},
+
+TRISHA_04_police: {
+  title:"Filing a Report",
+  time:"9:00 PM",
+  location:"Precinct, 8th Street",
+  image:"The Library at Night - Examining the Forgery",
+  timelineNote:"Filed a police report. Night shift lieutenant listened.",
+  onEnter:{ rep:{morality:1, chaos:-1}, flags:{calledCops:true} },
+  text:[
+    "The night shift lieutenant takes Trisha seriously. Mostly. He is thoughtful. He says <em>\"we'll look into it first thing Monday morning.\"</em>",
+    "It is Friday night at 9 PM. Monday morning is 60 hours away. Voss will be in Zurich by then.",
+    "Trisha thanks the lieutenant. Walks out. Stands on the curb. Makes a decision."
+  ],
+  choices:[
+    { emoji:"🛥️", label:"Crash the yacht party anyway", flavor:"You can't wait 60 hours.", next:"TRISHA_04_party" }
+  ]
+},
+
+TRISHA_04_research: {
+  title:"Going Deep",
+  time:"9:30 PM",
+  location:"Martin's lab — laptop glow",
+  image:"The Library at Night - Examining the Forgery",
+  timelineNote:"Dug into Voss's network. Found Aldric Thorne.",
+  onEnter:{ flags:{knowsThorne:true}, rep:{morality:1} },
+  text:[
+    "Trisha spends an hour pulling the thread. Voss's private gallery. His funding sources. His client list.",
+    "The client list is a who's-who of billionaire collectors. One name recurs. ALDRIC THORNE. Thorne doesn't just buy from Voss. Thorne funds Voss. Thorne owns the yacht where the collector's dinner is happening <em>tonight</em>.",
+    "And Thorne, Trisha discovers, has a pattern. He funds rare book dealers. Pharmaceutical VPs. Real estate developers. Municipal fixers.",
+    { text:"She doesn't fully understand what she's seeing. But she knows it's bigger than a stolen manuscript.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🛥️", label:"Crash the yacht party — now you know who's really there", flavor:"Knowledge is power. So is a sensible dress.", next:"TRISHA_04_party" }
+  ]
+},
+
+TRISHA_04_party: {
+  title:"The Dress Problem",
+  time:"9:00 PM",
+  location:"Downtown — heading toward the marina",
+  image:"Trisha - The Dress Shopping Comedy",
+  timelineNote:"Had to get a dress. Every librarian's nightmare.",
+  text:[
+    "Trisha realizes she can't walk onto a billionaire's yacht party in a cardigan and sensible shoes. She needs to <em>look the part</em>. She also needs a forged authentication certificate — ironic, using a forgery to catch a forger.",
+    "Her options for the dress:"
+  ],
+  choices:[
+    { emoji:"🏬", label:"Break into a closed boutique", flavor:"The owner is a library patron. You know the alarm code.", effects:{rep:{chaos:1}, items:["dress"]}, next:"TRISHA_05" },
+    { emoji:"📱", label:"Call her sister and beg", flavor:"Humbling. She'll ask a LOT of questions.", effects:{rep:{morality:1}, items:["dress"], flags:{sisterCalled:true}}, next:"TRISHA_05" },
+    { emoji:"🛍️", label:"The thrift store on 5th is open until 10", flavor:"Creative but risky.", effects:{items:["dress"], flags:{weirdDress:true}}, next:"TRISHA_05" }
+  ]
+},
+
+TRISHA_05: {
+  title:"The Forgery for the Forgery",
+  time:"10:15 PM",
+  location:"Back room of a copy shop",
+  image:"The Library at Night - Examining the Forgery",
+  timelineNote:"Got a forged authentication cert. Irony of the year.",
+  onEnter:{ items:["cert"], rep:{chaos:1, morality:-1} },
+  text:[
+    "Trisha tracks down Reggie — a grad student who supplements his fellowship by forging documents for drama clubs, small theater companies, and, occasionally, people like Trisha.",
+    "Reggie is thirty-six dollars and four hours late on a term paper. Trisha promises to never tell a soul and also she has his brother's library card that's been overdue since 2019 and if he does a good job she'll wipe it.",
+    "Reggie does a very good job. The cert is <em>chef's kiss</em>.",
+    { text:"The forged manuscript has a forged authentication. Nesting dolls of wrongness.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🛥️", label:"To the marina", flavor:"The yacht is boarding.", next:"TRISHA_06" }
+  ]
+},
+
+TRISHA_06: {
+  title:"The Yacht",
+  time:"11:00 PM",
+  location:"Aldric Thorne's yacht — The Marina",
+  image:"Aldric Thorne's Yacht - The Marina",
+  timelineNote:"Boarded Aldric Thorne's yacht.",
+  text:[
+    "The yacht is called <em>The Infinite</em>, which Trisha thinks is a bit on the nose. It is the size of a small hotel. A server in an actual tuxedo checks her (forged) invitation and her (forged) authentication papers.",
+    "He waves her on.",
+    "The dinner is being held on the upper deck. A string quartet is playing. There is caviar. There is a man in a linen suit laughing too loudly about a painting he just bought in Geneva.",
+    "A sharp-dressed woman shoves past Trisha to get to the bar. She has an attitude Trisha recognizes from every corporate patron who has ever treated the library like their personal study.",
+    { text:"(This is Gina. Her own night is happening elsewhere. Trisha will never know.)", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🕵️", label:"Find Voss — scan the deck", flavor:"The library badge makes great cover. Who checks a librarian?", next:"TRISHA_07" }
+  ]
+},
+
+TRISHA_07: {
+  title:"The Collector's Dinner",
+  time:"11:40 PM",
+  location:"Upper deck — string quartet, caviar",
+  image:"Trisha at the Yacht Party - Fish Out of Water",
+  timelineNote:"Found Voss. He was already selling the Aldworth.",
+  text:[
+    "Trisha finds Voss. He is exactly what she expected: forty-something, European, the kind of handsome that makes waiters nervous. He is talking to a collector — a woman in an emerald dress — about the <em>Aldworth Manuscript</em>.",
+    "He is describing her manuscript. Trisha's manuscript. As if it is his. As if it is legitimate.",
+    "The collector is considering $3.4 million.",
+    "The authentication cert in Trisha's purse is the only thing standing between Voss and a sale. If he asks to see one, she's in. If he already has one, she's... got a problem.",
+    "She hears him say: <em>\"My associate is bringing the certificate now.\"</em>",
+    "Trisha has thirty seconds to decide what kind of librarian she is."
+  ],
+  choices:[
+    { emoji:"📄", label:"Intercept the associate, hand over your forged cert", flavor:"Slip it into the chain. Confuse Voss.", requires:{item:"cert"}, effects:{rep:{chaos:1}, flags:{interceptedCert:true}}, next:"TRISHA_08" },
+    { emoji:"🔦", label:"Wait for him to leave, inspect the manuscript yourself", flavor:"UV flashlight will prove it's fake on the spot.", requires:{item:"uv"}, effects:{rep:{morality:1}}, next:"TRISHA_08" },
+    { emoji:"📢", label:"Cause a scene. Loudly.", flavor:"Librarians don't cause scenes. But tonight, maybe.", effects:{rep:{chaos:3, notoriety:3}}, next:"TRISHA_08_scene" }
+  ]
+},
+
+TRISHA_08: {
+  title:"The Manuscript, Illuminated",
+  time:"12:10 AM",
+  location:"A side cabin on the yacht",
+  image:"Trisha at the Yacht Party - Fish Out of Water",
+  timelineNote:"UV-scanned the manuscript. Confirmed the forgery.",
+  onEnter:{ rep:{notoriety:1} },
+  text:[
+    "Trisha slips into the cabin where the manuscript is resting on an acid-free cradle. Her hands shake because of course they do. She clicks the UV flashlight.",
+    "Ink composition: wrong. Gold leaf: synthetic. Vellum: under two years old.",
+    { text:"The Aldworth Manuscript sitting in this yacht cabin is not the Aldworth Manuscript.", style:"stinger" },
+    "She photographs everything on her phone. She hears footsteps in the hall.",
+    "Voss enters. He does not look surprised. He looks <em>amused</em>.",
+    { text:"\"You're the librarian. Morris, is it? Or Martha? I've seen you on the staff page.\"", style:"quote" },
+    "It's Trisha. He's doing it on purpose. That's how he is."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Take the photos and RUN", flavor:"You have what you need.", effects:{rep:{chaos:1}}, next:"TRISHA_09" },
+    { emoji:"🗣️", label:"Confront Voss here, on the yacht", flavor:"Bold. He's not alone.", next:"TRISHA_08_confront" }
+  ]
+},
+
+TRISHA_08_scene: {
+  title:"The Scene",
+  time:"12:00 AM",
+  location:"Upper deck",
+  image:"Trisha at the Yacht Party - Fish Out of Water",
+  timelineNote:"Caused a scene on the yacht. Everyone remembers.",
+  onEnter:{ rep:{notoriety:3, chaos:3, morality:-1} },
+  text:[
+    "Trisha takes a deep breath. Picks up a champagne glass. Clinks it with a fish knife. Everyone turns.",
+    { text:"\"Ladies and gentlemen! I'm Trisha Kendall. I'm a librarian. Dr. Voss is currently trying to sell you a forgery of the Aldworth Manuscript, which was stolen from the city public library sometime in the last two weeks. Pass it on.\"", style:"quote" },
+    "The string quartet stops playing. Voss's face goes a color Trisha has never seen on a human being. The collector in the emerald dress pulls out her phone.",
+    "Two security men in dinner jackets begin walking toward Trisha. One of them is very politely saying her name."
+  ],
+  choices:[
+    { emoji:"🏃", label:"Jump the railing. Swim.", flavor:"The marina is THIRTY FEET and it's October.", effects:{rep:{chaos:2}, lose:["dress"]}, next:"TRISHA_09" }
+  ]
+},
+
+TRISHA_08_confront: {
+  title:"Librarian vs. Dealer",
+  time:"12:15 AM",
+  location:"Yacht — side cabin",
+  image:"Trisha at the Yacht Party - Fish Out of Water",
+  timelineNote:"Confronted Voss on the yacht. Got his gallery address.",
+  onEnter:{ items:["vossKey"], rep:{notoriety:1, chaos:1} },
+  text:[
+    "Trisha, to her own astonishment, does not run. She holds the UV flashlight like it's a weapon. She tells Voss she has photographs, a colleague who documented the swap, and has already spoken to the police.",
+    "Voss studies her. She can see him calculating.",
+    { text:"\"Ms. Kendall. A compromise. You leave tonight with your colleague. He is safe. I have not been <em>uncivilized</em>. In return, you forget the yacht. I return the Aldworth by Monday. Quietly. Everyone wins.\"", style:"quote" },
+    "He slides a small bronze key across the table — the key to his private gallery where Martin is being held.",
+    "Trisha takes the key. She does not agree to anything.",
+    { text:"Voss smiles. He thinks she's reasonable. That's his first mistake.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🚪", label:"Leave the yacht — head to Voss's gallery", flavor:"Free Martin. Then decide what kind of librarian you are.", next:"TRISHA_09" }
+  ]
+},
+
+/* === ACT 3: MIDNIGHT PHARMACY === */
+
+TRISHA_09: {
+  title:"The Midnight Pharmacy",
+  time:"12:30 AM",
+  location:"Midnight Pharmacy — interior",
+  image:"The Midnight Pharmacy - Trisha's Tea",
+  timelineNote:"Ducked into the Midnight Pharmacy. Met the pharmacist.",
+  text:[
+    "Trisha has left the yacht with critical information, but Voss's people — or his own imagination — have her running through unfamiliar streets in a borrowed dress and heels she can barely walk in. She ducks into the first open door she sees.",
+    "The Midnight Pharmacy.",
+    "The pharmacist looks at her and says: <em>\"Librarian. You need to know who to trust.\"</em>",
+    "They place a small porcelain cup of dark tea on the counter. <em>\"Drink this. You'll hear what people really think. Not what they say — what they think.\"</em>",
+    { text:"\"You're the second one tonight. The photographer took the eye drops.\" A pause. \"Be careful with this. Some thoughts are very loud. And some people's minds are... not pleasant places to visit.\"", style:"quote" }
+  ],
+  choices:[
+    { emoji:"🍵", label:"Drink the tea", flavor:"You need to know who's lying at the final confrontation.", effects:{items:["tea"], power:true, flags:{drankTea:true}}, next:"TRISHA_10" },
+    { emoji:"🧙", label:"Take it but don't drink yet", flavor:"You want to control WHEN this happens.", effects:{items:["tea"]}, next:"TRISHA_10" },
+    { emoji:"🚫", label:"\"I don't need magic. I have a UV flashlight and a library science degree.\"", flavor:"The Trisha way.", effects:{rep:{morality:1}}, next:"TRISHA_10" }
+  ]
+},
+
+/* === ACT 4: THE POWER === */
+
+TRISHA_10: {
+  title:"The Overwhelm",
+  time:"1:30 AM",
+  location:"Streets of the city",
+  image:"Trisha's Mind Reading - The Overwhelm",
+  timelineNote:"Walked through the city hearing everyone's thoughts.",
+  onEnter:{ rep:{chaos:1} },
+  text:[
+    (state) => state.flags && state.flags.drankTea
+      ? "The tea hits Trisha somewhere between the pharmacy and the corner. It isn't noise. It's <em>density</em>. Every person she passes has a thought, and the thought arrives in her head like a librarian shelving a book that was never requested."
+      : "Trisha walks. Her heels click on wet pavement. She is cold in the borrowed dress. She is sober in a way she hasn't been in years. She is <em>thinking</em>.",
+    (state) => state.flags && state.flags.drankTea
+      ? "A man at a bus stop: <em>'if she texts back tonight I'll propose. if she doesn't, I'll wait a week.'</em> A woman in a cab: <em>'I hate him. I hate him. I hate him.'</em> A teenager: <em>'does he like me does he like me does he like me.'</em>"
+      : "She is thinking about Martin. About Voss. About the Aldworth and how many library patrons have no idea something irreplaceable has been stolen from them.",
+    (state) => state.flags && state.flags.drankTea
+      ? "And then, loudly, from a man in a torn suit walking past her: <em>'that salve is wearing off. why did I let him put that on my LIP.'</em> Trisha doesn't turn around. She has bigger fish tonight. (This is Jack. Their stories never quite intersect.)"
+      : "A man in a torn suit walks past her. They don't speak. Their nights will never intersect.",
+    "She passes a 24-hour diner. Through the window: a man with a camera bag hunched over coffee, texting furiously. He looks like he's in trouble.",
+    { text:"(This is Bob. Neither of them knows.)", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🔑", label:"Head to Voss's gallery", flavor:"Free Martin first. Deal with Voss next.", requires:{item:"vossKey"}, next:"TRISHA_12_gallery" },
+    { emoji:"🔍", label:"Find Voss's gallery address online", flavor:"Research. Your native soil.", hide:(s)=>s.inventory&&s.inventory.indexOf("vossKey")>=0, next:"TRISHA_12_gallery" }
+  ]
+},
+
+TRISHA_12_gallery: {
+  title:"The Private Gallery",
+  time:"3:00 AM",
+  location:"Voss's Gallery — rear entrance",
+  image:"The Library at Night - Examining the Forgery",
+  timelineNote:"Broke into Voss's gallery. Found Martin.",
+  onEnter:{ rep:{chaos:1} },
+  text:[
+    "The gallery is a quiet storefront in the arts district, unmarked except for a small brass plate: <em>VOSS FINE BOOKS — BY APPOINTMENT.</em>",
+    "Trisha lets herself in the back. The hall smells like cold paper and expensive leather.",
+    "She finds Martin in a windowless reading room. He is tied to a chair in a way that suggests whoever tied him has tied people before but wasn't trying very hard this time. He has a headache. Otherwise he is fine.",
+    { text:"\"Trisha. You came. You <em>shouldn't</em> have, but you came.\" He laughs and then winces because laughing hurts his head.", style:"quote" },
+    "Trisha unties Martin. They find the real Aldworth Manuscript on a worktable, under a UV lamp, next to forgery-in-progress #2. Voss was going to steal another one.",
+    "Voss, obviously, is on his way."
+  ],
+  choices:[
+    { emoji:"📕", label:"Take the real Aldworth and run", flavor:"Grab what matters. Leave the fight for later.", effects:{items:["manuscript"]}, next:"TRISHA_13" },
+    { emoji:"⏳", label:"Wait for Voss. End this tonight.", flavor:"Final confrontation. On your terms.", effects:{items:["manuscript"], flags:{waited:true}}, next:"TRISHA_13" }
+  ]
+},
+
+/* === ACT 5: BOSS === */
+
+TRISHA_13: {
+  title:"Battle of Wits",
+  time:"4:00 AM",
+  location:"Voss's Gallery — main viewing room",
+  image:"Trisha vs. Dr. Voss- Battle of Wits",
+  timelineNote:"Faced Voss in his own gallery.",
+  text:[
+    "Voss arrives at 4 AM in a tuxedo and an overcoat and an expression that is almost embarrassed.",
+    { text:"\"Ms. Kendall. You have made a truly extraordinary evening more extraordinary. I am almost impressed.\"", style:"quote" },
+    "He is not alone. Two of the security men from the yacht are with him. One of them smells like the harbor.",
+    "Voss explains, with the patience of a man explaining chess to a child, exactly why Trisha should hand over the Aldworth and walk away with her job and her cat and her Friday nights. He is persuasive. He is charming. He is three steps ahead.",
+    { text:(state)=>state.flags&&state.flags.drankTea
+      ? "Except the tea is still working. Trisha can hear what Voss is actually thinking. He is not three steps ahead. He is panicking. He has a buyer in Zurich who is out $3.4 million and an extremely specific kind of angry. He <em>needs</em> that manuscript. He has no backup plan. He is BLUFFING about the security men — they are hired for the night and they leave at 5 AM regardless."
+      : "Trisha listens. She has no mind-reading power. She has a library science degree and sixteen years of telling patrons firmly but kindly that they cannot, in fact, check out a reference book.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🧠", label:"Expose his bluff — the security men leave at 5 AM",
+      flavor:"Call it. Watch it crumble.",
+      requires:{flag:"drankTea"},
+      effects:{rep:{morality:2}, boss:"win"}, next:"TRISHA_14_outplay" },
+    { emoji:"📕", label:"Threaten to destroy the Aldworth yourself",
+      flavor:"A real librarian would never. That's the point.",
+      requires:{item:"manuscript"},
+      effects:{rep:{chaos:2, notoriety:2}, boss:"win"}, next:"TRISHA_14_mad" },
+    { emoji:"🔦", label:"Hit the UV lamp. Expose Voss's <em>second</em> forgery in progress.",
+      flavor:"The second theft he was about to commit. Evidence = leverage.",
+      requires:{item:"uv"},
+      effects:{rep:{morality:2, notoriety:1}, boss:"win"}, next:"TRISHA_14_evidence" },
+    { emoji:"🏃", label:"Run. Deal with it Monday.",
+      flavor:"Not every story is yours to finish tonight.",
+      effects:{boss:"avoided", rep:{morality:-1}}, next:"TRISHA_14_run" },
+    { emoji:"🤝", label:"Take Voss's original deal — Martin + Aldworth back by Monday",
+      flavor:"Small win. Pragmatic. Voss walks.",
+      requires:{flag:"waited"},
+      effects:{boss:"partial", rep:{morality:1, notoriety:-1}}, next:"TRISHA_14_deal" }
+  ]
+},
+
+TRISHA_14_outplay: {
+  title:"The Bluff",
+  time:"4:30 AM",
+  location:"Voss's Gallery",
+  image:"Trisha vs. Dr. Voss- Battle of Wits",
+  timelineNote:"Called Voss's bluff. He folded.",
+  onEnter:{ rep:{notoriety:2}, boss:"win" },
+  text:[
+    "Trisha sets the Aldworth down. Folds her hands. And in a voice she usually reserves for patrons who try to get away with a book from the rare room, she tells Voss exactly what he's actually thinking.",
+    { text:"\"Your Zurich buyer has paid a deposit you already spent. You have no backup. Your security men are contract workers who clock out at 5. You cannot hurt me here tonight. You can only run. Tomorrow morning a detective I've already spoken to is going to be at your gallery with a warrant.\"", style:"quote" },
+    "Voss's face does the most interesting thing Trisha has ever seen a face do. It attempts three separate expressions simultaneously and lands on something resembling <em>admiration</em>.",
+    { text:"\"Ms. Kendall. You are in the wrong profession.\"", style:"quote" },
+    "He leaves. The security men, as predicted, follow a specific hourly schedule. Martin is fine. The Aldworth goes back to the library by sunrise, in a canvas bag that also contains a library copy of <em>Middlemarch</em>."
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home to Dewey", flavor:"The cat is furious.", next:"TRISHA_19" }
+  ]
+},
+
+TRISHA_14_mad: {
+  title:"The Ultimatum",
+  time:"4:30 AM",
+  location:"Voss's Gallery",
+  image:"Trisha vs. Dr. Voss- Battle of Wits",
+  timelineNote:"Threatened to destroy the manuscript. He folded.",
+  onEnter:{ rep:{chaos:3, notoriety:2}, boss:"win" },
+  text:[
+    "Trisha picks up the Aldworth. Holds it over an open UV lamp. Her thumb near a $2.3 million binding.",
+    { text:"\"Do you want your Zurich money back, Dr. Voss, or do I become the first librarian to burn the Aldworth Manuscript in 500 years. You have eight seconds.\"", style:"quote" },
+    "Voss laughs. Stops laughing. Studies her. Sees she isn't bluffing — a surprise that reorganizes his worldview.",
+    "He leaves. The security men leave. The Aldworth goes home. Trisha will have nightmares about this moment for a month. Martin will tell the story at every library conference for the rest of his career."
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"Dewey doesn't care.", next:"TRISHA_19" }
+  ]
+},
+
+TRISHA_14_evidence: {
+  title:"The Second Forgery",
+  time:"4:30 AM",
+  location:"Voss's Gallery — back room",
+  image:"The Library at Night - Examining the Forgery",
+  timelineNote:"Exposed Voss's second forgery. Leverage.",
+  onEnter:{ rep:{morality:2, notoriety:1}, boss:"win" },
+  text:[
+    "Trisha clicks on the UV lamp. On the worktable is a second forgery — an illuminated Book of Hours, partway through the aging process. Trisha photographs the workspace, the paints, the pre-aged vellum, the client list pinned to the wall.",
+    "Voss sees what she's seeing. He knows, immediately, what this means. A single stolen manuscript is one crime. A <em>workshop</em> is a pattern. A pattern is federal.",
+    "He is suddenly willing to discuss returning things. Quickly. Quietly.",
+    { text:"Trisha does not accept his offer. She has photos. She has the Aldworth. She has Martin. She has her detective's phone number.", style:"italic" },
+    "Voss is on a plane to a country without extradition by 6 AM."
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"The sun is rising.", next:"TRISHA_19" }
+  ]
+},
+
+TRISHA_14_run: {
+  title:"Not Tonight",
+  time:"4:40 AM",
+  location:"Streets outside the gallery",
+  image:"City Hall - Night Exterior",
+  timelineNote:"Left with Martin. Left Voss in the wind.",
+  onEnter:{ boss:"avoided", rep:{chaos:-1} },
+  text:[
+    "Trisha and Martin leave. The Aldworth comes with them. Voss does not follow.",
+    "On the walk home, Martin tells Trisha she's the bravest person he's ever worked with. Trisha says: <em>\"I'm really not. I just couldn't let this happen.\"</em>",
+    "Voss vanishes by morning. The investigation goes cold. The Aldworth is back where it belongs. That will have to be enough. It almost is.",
+    { text:"Almost.", style:"stinger" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"Feed Dewey. Sleep.", next:"TRISHA_19" }
+  ]
+},
+
+TRISHA_14_deal: {
+  title:"The Civilized Exit",
+  time:"4:30 AM",
+  location:"Voss's Gallery",
+  image:"Trisha vs. Dr. Voss- Battle of Wits",
+  timelineNote:"Took Voss's deal. The Aldworth returns Monday.",
+  onEnter:{ boss:"partial", rep:{morality:1, notoriety:-1} },
+  text:[
+    "Trisha takes the deal. Martin comes home. The Aldworth is returned quietly on Monday with no police report. Voss disappears into the private collector ether. No charges. No scandal. No broken glass.",
+    "On the walk home, Trisha tells Martin the truth: <em>\"I took the quiet option because I wasn't sure I could survive the loud one.\"</em> Martin says that was the smart move. Martin is lying a little. Trisha can tell.",
+    { text:"Small victory. Real, though.", style:"italic" }
+  ],
+  choices:[
+    { emoji:"🌅", label:"Go home", flavor:"Quiet sunrise.", next:"TRISHA_19" }
+  ]
+},
+
+/* === EPILOGUE === */
+
+TRISHA_19: {
+  title:"Dawn",
+  time:"6:00 AM",
+  location:"Trisha's Apartment",
+  image:"Trisha's 6 AM Epilogue",
+  timelineNote:"Home. Dewey unimpressed. Night reshelved.",
+  ending:true,
+  text:[
+    "Trisha gets home as the sun is coming up. Dewey is at the door, performing offense.",
+    "She sits on the couch, still in a dress that is now ruined, still holding a UV flashlight, and stares at her reflection in the black TV screen.",
+    (state) => state.flags && state.flags.drankTea
+      ? "Her inner voice is quiet for the first time in hours. Dewey's inner voice: <em>\"dinner. dinner. dinner.\"</em> Mercifully narrow."
+      : "She is thinking about everything. She is thinking about who she was at 5:30 yesterday and who she is now. She is thinking that she has, probably, in a small and improbable way, saved a $2.3 million piece of cultural heritage.",
+    { text:"Middlemarch is still on the coffee table. Bookmark at chapter three.", style:"italic" },
+    "She feeds the cat. She puts the kettle on. She will sleep in about an hour. Not yet."
+  ]
+}
+
+});
+</script>
+
+<!-- ============================================================
+     v2 ADDITIONS — HP, death, skill checks, pool mini-game, toasts
+     ============================================================ -->
+<style>
+/* HP hearts */
+.hp-row{display:flex;align-items:center;gap:6px;padding:4px 12px 8px;background:#101024;border-bottom:1px solid #2a2a4a;flex-shrink:0}
+.hp-label{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:#8888a8;font-weight:700;margin-right:4px}
+.hp-hearts{display:flex;gap:4px}
+.hp-heart{font-size:16px;line-height:1;filter:drop-shadow(0 0 4px rgba(255,0,64,.7))}
+.hp-heart.empty{opacity:.25;filter:none}
+.hp-row .money{margin-left:auto;font-weight:800;color:#4ade80;font-size:13px;letter-spacing:.02em}
+
+/* Damage flash */
+.damage-flash{position:fixed;inset:0;background:rgba(255,0,0,.5);pointer-events:none;z-index:200;opacity:0;animation:damageFlash .5s ease}
+@keyframes damageFlash{0%{opacity:0}20%{opacity:.85}100%{opacity:0}}
+.screen-shake{animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translate(0,0)}10%{transform:translate(-4px,2px)}20%{transform:translate(5px,-3px)}30%{transform:translate(-3px,4px)}40%{transform:translate(4px,3px)}50%{transform:translate(-5px,-2px)}60%{transform:translate(3px,3px)}70%{transform:translate(-2px,-4px)}80%{transform:translate(5px,2px)}90%{transform:translate(-3px,1px)}}
+
+/* Skill check modal */
+#check-modal{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:90;background:rgba(0,0,0,.88);padding:16px}
+#check-modal.active{display:flex}
+.check-card{background:#11111f;border:2px solid #e91e63;border-radius:18px;width:min(92%,360px);padding:22px 20px;text-align:center;box-shadow:0 0 40px rgba(233,30,99,.4)}
+.check-card h2{font-size:11px;color:#e91e63;text-transform:uppercase;letter-spacing:.22em;margin-bottom:6px}
+.check-card .check-name{font-size:22px;font-weight:900;color:#fff;margin-bottom:12px;line-height:1.2}
+.check-card .check-formula{font-size:13px;color:#bdbdd6;margin-bottom:4px}
+.check-card .check-odds{font-size:12px;color:#9393b8;margin-bottom:14px}
+.check-card .check-odds b{color:#ffca28}
+.check-dice{width:92px;height:92px;margin:0 auto 14px;background:#1f2040;border:3px solid #3a3a5a;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:900;color:#fff;position:relative}
+.check-dice.rolling{animation:diceRoll .08s linear infinite}
+@keyframes diceRoll{0%{transform:rotate(0deg) scale(1)}25%{transform:rotate(90deg) scale(1.05)}50%{transform:rotate(180deg) scale(.95)}75%{transform:rotate(270deg) scale(1.05)}100%{transform:rotate(360deg) scale(1)}}
+.check-dice.success{border-color:#4ade80;color:#4ade80;box-shadow:0 0 24px rgba(74,222,128,.5)}
+.check-dice.fail{border-color:#ff3d5c;color:#ff3d5c;box-shadow:0 0 24px rgba(255,61,92,.5)}
+.check-result{font-size:18px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;min-height:22px}
+.check-result.success{color:#4ade80}
+.check-result.fail{color:#ff3d5c}
+.check-btn{background:#e91e63;color:#fff;padding:12px 22px;border-radius:26px;font-weight:800;font-size:15px;border:none;cursor:pointer;letter-spacing:.03em;text-transform:uppercase;display:none}
+.check-btn.show{display:inline-block}
+.check-btn.roll-btn{background:#e91e63}
+.check-btn.continue-btn{background:#4ade80;color:#0a0a14}
+.check-btn.fail-btn{background:#ff3d5c}
+.check-card .cancel{display:block;margin-top:10px;font-size:11px;color:#888;text-decoration:underline;cursor:pointer;background:none;border:none}
+
+/* Death screen */
+#death-screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:#000;z-index:100;padding:30px;text-align:center}
+#death-screen.active{display:flex}
+#death-screen .you-died{font-size:48px;font-weight:900;color:#ff3d5c;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 0 30px rgba(255,61,92,.7);margin-bottom:10px;animation:deathPulse 2s ease infinite}
+@keyframes deathPulse{0%,100%{text-shadow:0 0 30px rgba(255,61,92,.6)}50%{text-shadow:0 0 60px rgba(255,61,92,.9)}}
+#death-screen .cause{font-style:italic;color:#e0e0e8;font-size:15px;line-height:1.5;max-width:360px;margin-bottom:20px}
+#death-screen .byline{font-size:11px;color:#666;letter-spacing:.25em;text-transform:uppercase;margin-bottom:26px}
+#death-screen .death-buttons{display:flex;flex-direction:column;gap:10px;width:min(86%,280px)}
+#death-screen .title-btn{background:#ff3d5c;box-shadow:0 6px 0 #881e30}
+#death-screen .title-btn:active{box-shadow:0 2px 0 #881e30}
+
+/* Phone toast — appears mid-scene when phone buzzes */
+.toast-phone{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#e91e63,#ab2760);color:#fff;padding:10px 16px 10px 46px;border-radius:22px;font-size:12px;font-weight:700;z-index:120;box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:min(88%,380px);animation:toastPhone 3.5s ease forwards;position:relative}
+.toast-phone::before{content:"📱";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:18px;animation:toastBuzz .3s ease 3}
+@keyframes toastBuzz{0%,100%{transform:translateY(-50%) rotate(0)}25%{transform:translateY(-50%) rotate(-18deg)}75%{transform:translateY(-50%) rotate(18deg)}}
+@keyframes toastPhone{0%{opacity:0;transform:translate(-50%,-14px)}8%{opacity:1;transform:translate(-50%,0)}90%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-14px)}}
+.toast-phone .from{font-weight:900;margin-right:6px;color:#ffca28}
+
+/* Skill check hint in choice button */
+.choice .check-hint{display:inline-block;background:#e91e63;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.04em;margin-left:4px;text-transform:uppercase;vertical-align:middle}
+.choice.risky{border-color:#ff6f00}
+.choice.lethal{border-color:#ff3d5c;background:#2a1520}
+
+/* Pool mini-game */
+#pool-modal{position:absolute;inset:0;display:none;flex-direction:column;background:#0d1b12;z-index:80;padding:12px}
+#pool-modal.active{display:flex}
+.pool-header{display:flex;justify-content:space-between;align-items:center;padding:6px 8px 12px;color:#fff;flex-shrink:0}
+.pool-header .title{font-weight:900;color:#ffca28;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+.pool-header .score{display:flex;gap:14px;font-size:13px;font-weight:700}
+.pool-header .score b{color:#4ade80}
+.pool-header .score .lose{color:#ff3d5c}
+#pool-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#071209;border-radius:12px;overflow:hidden;touch-action:none;position:relative}
+#pool-canvas{background:#0c5834;border:3px solid #3e1d10;border-radius:10px;touch-action:none;display:block;max-width:100%;max-height:100%}
+.pool-instructions{padding:10px;font-size:12px;color:#c9c9dc;text-align:center;line-height:1.4;flex-shrink:0}
+.pool-instructions b{color:#ffca28}
+.pool-buttons{display:flex;gap:8px;padding:8px 0 4px;flex-shrink:0}
+.pool-btn{flex:1;background:#1f2040;color:#fff;padding:10px;border:2px solid #3a3a5a;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer}
+.pool-btn.primary{background:#ffca28;color:#0a0a14;border-color:#ffca28}
+.pool-btn.cash-out{background:#1a3e22;border-color:#4ade80;color:#4ade80}
+#pool-result{position:absolute;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:5;padding:20px;text-align:center;flex-direction:column}
+#pool-result.active{display:flex}
+#pool-result .big{font-size:34px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+#pool-result .big.win{color:#4ade80;text-shadow:0 0 24px rgba(74,222,128,.5)}
+#pool-result .big.lose{color:#ff3d5c;text-shadow:0 0 24px rgba(255,61,92,.5)}
+#pool-result .detail{color:#ddd;margin-bottom:16px;font-size:14px;max-width:320px;line-height:1.5}
+
+/* Transition flash between scenes */
+.scene-flash{position:absolute;inset:0;background:#fff;pointer-events:none;z-index:40;opacity:0;animation:sceneFlash .25s ease}
+@keyframes sceneFlash{0%{opacity:0}30%{opacity:.35}100%{opacity:0}}
+
+/* Stability warning when power is unstable */
+.stability-bar{margin-left:8px;font-size:10px;color:#b39ddb;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.stability-bar.low{color:#ff6f00;animation:pulse2 1s ease infinite}
+.stability-bar.critical{color:#ff3d5c;animation:pulse2 .5s ease infinite}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Choice variants */
+.choice.fight{border-color:#ff3d5c}
+.choice.power{border-color:#76ff7a;background:#0f2a14}
+.choice.power .emoji{filter:drop-shadow(0 0 6px rgba(118,255,122,.8))}
+</style>
+
+<!-- v2 Modals -->
+<div id="check-modal">
+  <div class="check-card">
+    <h2 id="check-kicker">Skill Check</h2>
+    <div class="check-name" id="check-name">The Attempt</div>
+    <div class="check-formula" id="check-formula">d20 + 0 vs. DC 12</div>
+    <div class="check-odds" id="check-odds">Odds: <b>50%</b></div>
+    <div class="check-dice" id="check-dice">🎲</div>
+    <div class="check-result" id="check-result">&nbsp;</div>
+    <button class="check-btn roll-btn show" id="check-roll-btn" onclick="rollCheck()">Roll</button>
+    <button class="check-btn continue-btn" id="check-continue-btn" onclick="finishCheck()">Continue</button>
+  </div>
+</div>
+
+<div id="death-screen">
+  <div class="byline">Friday — 20XX</div>
+  <div class="you-died">You Died</div>
+  <div class="cause" id="death-cause">The night caught up with you.</div>
+  <div class="byline" id="death-time">4:12 AM</div>
+  <div class="death-buttons">
+    <button class="btn title-btn" onclick="startGame(state.character)">Try Again</button>
+    <button class="btn title-btn secondary" onclick="showCharacterSelect()">Pick a different character</button>
+  </div>
+</div>
+
+<div id="pool-modal">
+  <div class="pool-header">
+    <div class="title">🎱 Pool Hustle</div>
+    <div class="score">
+      <div>Pot: <b id="pool-pot">$0</b></div>
+      <div>Bet: <span id="pool-bet">$100</span></div>
+    </div>
+  </div>
+  <div id="pool-canvas-wrap">
+    <canvas id="pool-canvas" width="340" height="520"></canvas>
+    <div id="pool-result">
+      <div class="big" id="pool-result-big">SUNK IT</div>
+      <div class="detail" id="pool-result-detail"></div>
+      <button class="pool-btn primary" id="pool-result-btn">Next Rack</button>
+    </div>
+  </div>
+  <div class="pool-instructions" id="pool-instructions">
+    Drag from the <b>white ball</b>. The longer the pull, the harder the shot. Release to break.
+  </div>
+  <div class="pool-buttons">
+    <button class="pool-btn cash-out" id="pool-cashout" onclick="poolCashOut()">Cash Out</button>
+    <button class="pool-btn" onclick="poolLeave()">Leave Table</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   v2 ENGINE — HP, death, skill checks, toasts, pool, tone upgrades
+   ========================================================================= */
+
+/* ---------- Extra state ---------- */
+state.hp = 3;
+state.maxHp = 3;
+state.money = 0;
+state.wounds = []; // strings describing current injuries
+state._originalResetState = resetState;
+resetState = function(char){
+  state._originalResetState(char);
+  state.hp = 3;
+  state.maxHp = 3;
+  state.money = 0;
+  state.wounds = [];
+};
+
+/* Override applyEffects to support hp, money, wound, death triggers, toasts */
+const _origApplyEffects = applyEffects;
+applyEffects = function(fx, msgs){
+  _origApplyEffects(fx, msgs);
+  if(!fx) return;
+  if(typeof fx.hp === "number"){
+    state.hp = Math.max(0, Math.min(state.maxHp, state.hp + fx.hp));
+    if(fx.hp < 0){
+      flashDamage();
+      if(msgs) msgs.push({kind:"lose", text:`${fx.hp} HP`});
+    } else if(fx.hp > 0 && msgs){
+      msgs.push({kind:"item", text:`+${fx.hp} HP`});
+    }
+  }
+  if(typeof fx.money === "number"){
+    state.money += fx.money;
+    if(msgs){
+      const sign = fx.money > 0 ? "+" : "";
+      msgs.push({kind: fx.money > 0 ? "item" : "lose", text:`${sign}$${fx.money}`});
+    }
+  }
+  if(fx.wound){
+    state.wounds.push(fx.wound);
+    if(msgs) msgs.push({kind:"lose", text:`🩸 ${fx.wound}`});
+  }
+  if(fx.toast){
+    showPhoneToast(fx.toast);
+  }
+};
+
+/* ---------- Render HP + money HUD addition ---------- */
+function renderHp(){
+  let row = document.getElementById("hp-row");
+  if(!row){
+    row = document.createElement("div");
+    row.className = "hp-row";
+    row.id = "hp-row";
+    // insert after .hud-stats
+    const stats = document.querySelector("#game-screen .hud-stats");
+    stats.parentNode.insertBefore(row, stats.nextSibling);
+  }
+  let heartsHtml = "";
+  for(let i=0;i<state.maxHp;i++){
+    heartsHtml += `<span class="hp-heart ${i<state.hp?"":"empty"}">❤</span>`;
+  }
+  let woundHtml = "";
+  if(state.wounds.length){
+    woundHtml = `<span style="font-size:10px;color:#ff6f00;margin-left:6px">${state.wounds.map(w=>"🩸"+w).join(" ")}</span>`;
+  }
+  row.innerHTML = `<span class="hp-label">Body</span><span class="hp-hearts">${heartsHtml}</span>${woundHtml}<span class="money">$${state.money}</span>`;
+  if(state.hp <= 0){
+    // trigger death if HP hits 0 — but only if we're still on a gameplay screen
+    if(document.getElementById("game-screen").classList.contains("active")){
+      setTimeout(()=>showDeath("Your body gave out. The last thing you felt was your phone, still buzzing.", null, state.currentScene ? SCENES[state.currentScene]?.time : null), 400);
+    }
+  }
+}
+
+/* hook renderStats to also render HP */
+const _origRenderStats = renderStats;
+renderStats = function(){ _origRenderStats(); renderHp(); };
+
+/* ---------- Damage flash / screen shake ---------- */
+function flashDamage(){
+  const flash = document.createElement("div");
+  flash.className = "damage-flash";
+  document.body.appendChild(flash);
+  setTimeout(()=>flash.remove(), 600);
+  const game = document.getElementById("game-screen");
+  game.classList.add("screen-shake");
+  setTimeout(()=>game.classList.remove("screen-shake"), 450);
+}
+
+/* ---------- Phone toast (mid-scene buzz) ---------- */
+function showPhoneToast(t){
+  const tEl = document.createElement("div");
+  tEl.className = "toast-phone";
+  tEl.innerHTML = `<span class="from">${t.from||"Unknown"}:</span> ${t.body||""}`;
+  document.body.appendChild(tEl);
+  setTimeout(()=>tEl.remove(), 3600);
+  // Also add to phone notifications
+  addPhoneNotification({from: t.from||"Unknown", body: t.body||"", time: (SCENES[state.currentScene]||{}).time||"", type: t.type||"ominous"});
+  renderPhoneBadge();
+}
+
+/* ---------- Death screen ---------- */
+function showDeath(cause, title, time){
+  hideAll();
+  const el = document.getElementById("death-screen");
+  document.getElementById("death-cause").textContent = cause || "You didn't make it.";
+  document.getElementById("death-time").textContent = time || "4:00 AM";
+  el.classList.add("active");
+}
+
+/* ---------- Skill Check modal ---------- */
+let _pendingCheck = null;
+
+/**
+ * check: {name, dc, bonus (optional), flavor (optional), onSuccess (next scene or callback), onFail (next scene or callback)}
+ * bonus can be a number or a computed function(state)
+ */
+function startSkillCheck(check){
+  _pendingCheck = check;
+  const bonus = typeof check.bonus === "function" ? check.bonus(state) : (check.bonus||0);
+  const dc = check.dc;
+  const needed = Math.max(1, dc - bonus);
+  const prob = Math.round(Math.max(0,Math.min(20, 21-needed)) / 20 * 100);
+  document.getElementById("check-kicker").textContent = check.kicker || "Skill Check";
+  document.getElementById("check-name").textContent = check.name;
+  document.getElementById("check-formula").innerHTML = `d20 ${bonus>=0?"+":""}${bonus} vs. DC ${dc}`;
+  document.getElementById("check-odds").innerHTML = `Need <b>${needed}+</b> on the die · Odds: <b>${prob}%</b>${check.flavor?`<br><span style="color:#9393b8;font-style:italic">${check.flavor}</span>`:""}`;
+  document.getElementById("check-dice").textContent = "?";
+  document.getElementById("check-dice").className = "check-dice";
+  document.getElementById("check-result").textContent = "";
+  document.getElementById("check-result").className = "check-result";
+  document.getElementById("check-roll-btn").classList.add("show");
+  document.getElementById("check-continue-btn").classList.remove("show");
+  document.getElementById("check-modal").classList.add("active");
+}
+function rollCheck(){
+  const check = _pendingCheck;
+  const bonus = typeof check.bonus === "function" ? check.bonus(state) : (check.bonus||0);
+  const dice = document.getElementById("check-dice");
+  const resultEl = document.getElementById("check-result");
+  dice.classList.add("rolling");
+  document.getElementById("check-roll-btn").classList.remove("show");
+  let shown = 0;
+  const shuffle = setInterval(()=>{
+    dice.textContent = Math.floor(Math.random()*20)+1;
+    shown++;
+    if(shown > 18){
+      clearInterval(shuffle);
+      const roll = Math.floor(Math.random()*20)+1;
+      const total = roll + bonus;
+      const success = total >= check.dc || roll === 20;
+      const crit = roll === 20;
+      const critFail = roll === 1;
+      dice.classList.remove("rolling");
+      dice.textContent = roll;
+      dice.classList.add(success && !critFail ? "success" : "fail");
+      resultEl.textContent = critFail ? `CRIT FAIL (${total} vs ${check.dc})` : crit ? `NAT 20 — CRITICAL (${total})` : success ? `SUCCESS (${total} vs ${check.dc})` : `FAIL (${total} vs ${check.dc})`;
+      resultEl.classList.add(success && !critFail ? "success" : "fail");
+      _pendingCheck._outcome = {success: success && !critFail, crit, critFail, roll, total};
+      document.getElementById("check-continue-btn").classList.add("show");
+    }
+  }, 55);
+}
+function finishCheck(){
+  document.getElementById("check-modal").classList.remove("active");
+  const check = _pendingCheck;
+  _pendingCheck = null;
+  if(!check || !check._outcome) return;
+  const outcome = check._outcome;
+  const branch = outcome.success ? check.onSuccess : check.onFail;
+  if(typeof branch === "function"){
+    branch(outcome);
+  } else if(typeof branch === "string"){
+    renderScene(branch);
+  } else if(branch && typeof branch === "object"){
+    if(branch.effects) applyEffects(branch.effects, null);
+    renderInventory(); renderStats();
+    if(branch.next) renderScene(branch.next);
+  }
+}
+
+/* ---------- makeChoice — support skill checks & mini-games ---------- */
+const _origMakeChoice = makeChoice;
+makeChoice = function(choice){
+  // Mid-choice sound / pulse
+  if(choice.check){
+    // Optionally apply pre-check effects
+    if(choice.effects) applyEffects(choice.effects, null);
+    renderInventory(); renderStats();
+    startSkillCheck(choice.check);
+    return;
+  }
+  if(choice.minigame === "pool"){
+    if(choice.effects) applyEffects(choice.effects, null);
+    renderInventory(); renderStats();
+    startPool(choice.onWin, choice.onLose);
+    return;
+  }
+  // Default path
+  _origMakeChoice(choice);
+};
+
+/* ---------- Choice rendering upgrade (hint tag, fight/risky classes) ---------- */
+const _origRenderScene = renderScene;
+renderScene = function(id){
+  // Add a tiny scene flash
+  const game = document.getElementById("game-screen");
+  if(game.classList.contains("active")){
+    const f = document.createElement("div");
+    f.className = "scene-flash";
+    game.appendChild(f);
+    setTimeout(()=>f.remove(), 260);
+  }
+  _origRenderScene(id);
+  // Decorate choices post-render
+  const choicesEl = document.getElementById("scene-choices");
+  const scene = SCENES[id];
+  if(!scene || !scene.choices) return;
+  const visible = scene.choices.filter(c => !c.hide || !c.hide(state));
+  [...choicesEl.querySelectorAll(".choice")].forEach((el, i) => {
+    const c = visible[i];
+    if(!c) return;
+    if(c.risk === "risky") el.classList.add("risky");
+    if(c.risk === "lethal") el.classList.add("lethal");
+    if(c.risk === "fight") el.classList.add("fight");
+    if(c.risk === "power") el.classList.add("power");
+    if(c.check){
+      const bonus = typeof c.check.bonus === "function" ? c.check.bonus(state) : (c.check.bonus||0);
+      const needed = Math.max(1, c.check.dc - bonus);
+      const prob = Math.round(Math.max(0,Math.min(20, 21-needed)) / 20 * 100);
+      const tag = el.querySelector(".label");
+      if(tag){ tag.innerHTML += ` <span class="check-hint">🎲 ${prob}%</span>`; }
+    }
+    if(c.minigame === "pool"){
+      const tag = el.querySelector(".label");
+      if(tag){ tag.innerHTML += ` <span class="check-hint">🎱 Mini</span>`; }
+    }
+  });
+};
+
+/* =========================================================================
+   POOL MINI-GAME — drag to aim, release to shoot, try to sink balls
+   ========================================================================= */
+const POOL = {
+  canvas: null, ctx: null,
+  W: 340, H: 520,
+  cue: null, balls: [], pockets: [],
+  running: false,
+  aiming: false, aimStart: null, aimEnd: null,
+  round: 1, maxRounds: 5,
+  pot: 0, bet: 100,
+  onWin: null, onLose: null,
+  shotsThisRound: 0,
+  sunkThisRound: 0,
+};
+
+function startPool(onWin, onLose){
+  POOL.round = 1;
+  POOL.pot = 0;
+  POOL.bet = 100;
+  POOL.onWin = onWin;
+  POOL.onLose = onLose;
+  POOL.canvas = document.getElementById("pool-canvas");
+  POOL.ctx = POOL.canvas.getContext("2d");
+  // Resize to fit
+  const wrap = document.getElementById("pool-canvas-wrap");
+  const rect = wrap.getBoundingClientRect();
+  const targetW = Math.min(340, rect.width - 24);
+  const targetH = Math.min(520, rect.height - 24);
+  const ratio = 340/520;
+  let cw, ch;
+  if(targetW/targetH > ratio){ ch = targetH; cw = ch*ratio; } else { cw = targetW; ch = cw/ratio; }
+  POOL.canvas.width = 340; POOL.canvas.height = 520;
+  POOL.canvas.style.width = cw + "px";
+  POOL.canvas.style.height = ch + "px";
+  setupPoolRack();
+  document.getElementById("pool-modal").classList.add("active");
+  document.getElementById("pool-result").classList.remove("active");
+  document.getElementById("pool-cashout").style.display = "none";
+  updatePoolHud();
+  attachPoolInputs();
+  poolLoop();
+}
+
+function setupPoolRack(){
+  POOL.W = 340; POOL.H = 520;
+  POOL.pockets = [
+    {x:20,y:20,r:20},{x:320,y:20,r:20},
+    {x:20,y:260,r:18},{x:320,y:260,r:18},
+    {x:20,y:500,r:20},{x:320,y:500,r:20}
+  ];
+  POOL.cue = {x:170,y:430,vx:0,vy:0,r:10,color:"#fff",type:"cue",sunk:false};
+  POOL.balls = [POOL.cue];
+  const colors = ["#ff3d5c","#ffca28","#4ade80","#4fc3f7","#ab47bc"];
+  // Rack target balls loosely
+  const rackCenter = {x:170, y:170};
+  const positions = [
+    {x:0,y:0},{x:-14,y:22},{x:14,y:22},
+    {x:-28,y:44},{x:0,y:44}
+  ];
+  positions.forEach((p,i)=>{
+    POOL.balls.push({
+      x: rackCenter.x + p.x, y: rackCenter.y + p.y,
+      vx:0, vy:0, r:10, color: colors[i%colors.length], type:"target", sunk:false
+    });
+  });
+  POOL.shotsThisRound = 0;
+  POOL.sunkThisRound = 0;
+}
+
+function updatePoolHud(){
+  document.getElementById("pool-pot").textContent = "$" + POOL.pot;
+  document.getElementById("pool-bet").textContent = "$" + POOL.bet;
+  document.getElementById("pool-instructions").innerHTML = `Round <b>${POOL.round}/${POOL.maxRounds}</b> — sink at least <b>one color ball</b>. Miss your shot and the cue goes wild. Sink the cue and the round is over.`;
+  document.getElementById("pool-cashout").style.display = POOL.pot > 0 ? "block" : "none";
+}
+
+function attachPoolInputs(){
+  const c = POOL.canvas;
+  const getPt = (e) => {
+    const rect = c.getBoundingClientRect();
+    const sx = c.width/rect.width, sy = c.height/rect.height;
+    const t = e.touches ? e.touches[0] : e;
+    return {x:(t.clientX-rect.left)*sx, y:(t.clientY-rect.top)*sy};
+  };
+  const start = (e) => {
+    if(POOL.running) return; // can't aim while balls moving
+    if(POOL.cue.sunk) return;
+    e.preventDefault();
+    const p = getPt(e);
+    const dx = p.x - POOL.cue.x, dy = p.y - POOL.cue.y;
+    if(Math.hypot(dx,dy) > 80) return; // must start near the cue
+    POOL.aiming = true;
+    POOL.aimStart = {x:POOL.cue.x, y:POOL.cue.y};
+    POOL.aimEnd = p;
+  };
+  const move = (e) => {
+    if(!POOL.aiming) return;
+    e.preventDefault();
+    POOL.aimEnd = getPt(e);
+  };
+  const end = (e) => {
+    if(!POOL.aiming) return;
+    e.preventDefault();
+    POOL.aiming = false;
+    // Direction = from cue to aimEnd; power = distance (clamped)
+    const dx = POOL.cue.x - POOL.aimEnd.x; // pull = opposite direction
+    const dy = POOL.cue.y - POOL.aimEnd.y;
+    const dist = Math.min(Math.hypot(dx,dy), 120);
+    if(dist < 6) return; // no-op
+    const speed = dist * 0.13;
+    const ang = Math.atan2(dy,dx);
+    POOL.cue.vx = Math.cos(ang)*speed;
+    POOL.cue.vy = Math.sin(ang)*speed;
+    POOL.running = true;
+    POOL.shotsThisRound++;
+  };
+  c.onmousedown = start; c.onmousemove = move; c.onmouseup = end; c.onmouseleave = ()=>{POOL.aiming=false;};
+  c.ontouchstart = start; c.ontouchmove = move; c.ontouchend = end;
+}
+
+function poolLoop(){
+  if(!document.getElementById("pool-modal").classList.contains("active")) return;
+  stepPool();
+  drawPool();
+  requestAnimationFrame(poolLoop);
+}
+
+function stepPool(){
+  const balls = POOL.balls.filter(b=>!b.sunk);
+  if(!POOL.running) return;
+  // Move + friction
+  balls.forEach(b => {
+    b.x += b.vx; b.y += b.vy;
+    b.vx *= 0.984; b.vy *= 0.984;
+    if(Math.abs(b.vx)<0.05) b.vx=0;
+    if(Math.abs(b.vy)<0.05) b.vy=0;
+    // Walls
+    if(b.x - b.r < 20){ b.x = 20+b.r; b.vx = -b.vx*0.85; }
+    if(b.x + b.r > 320){ b.x = 320-b.r; b.vx = -b.vx*0.85; }
+    if(b.y - b.r < 20){ b.y = 20+b.r; b.vy = -b.vy*0.85; }
+    if(b.y + b.r > 500){ b.y = 500-b.r; b.vy = -b.vy*0.85; }
+  });
+  // Ball-ball
+  for(let i=0;i<balls.length;i++){
+    for(let j=i+1;j<balls.length;j++){
+      const a = balls[i], b = balls[j];
+      const dx = b.x-a.x, dy=b.y-a.y;
+      const d = Math.hypot(dx,dy);
+      if(d > 0 && d < a.r+b.r){
+        const nx=dx/d, ny=dy/d;
+        const overlap = (a.r+b.r)-d;
+        a.x -= nx*overlap/2; a.y -= ny*overlap/2;
+        b.x += nx*overlap/2; b.y += ny*overlap/2;
+        // swap velocities along normal
+        const va = a.vx*nx + a.vy*ny;
+        const vb = b.vx*nx + b.vy*ny;
+        a.vx += (vb-va)*nx; a.vy += (vb-va)*ny;
+        b.vx += (va-vb)*nx; b.vy += (va-vb)*ny;
+      }
+    }
+  }
+  // Pockets
+  balls.forEach(b => {
+    for(const p of POOL.pockets){
+      if(Math.hypot(b.x-p.x, b.y-p.y) < p.r - 4){
+        b.sunk = true;
+        if(b.type === "target") POOL.sunkThisRound++;
+        break;
+      }
+    }
+  });
+  // Stop?
+  const stopped = balls.every(b => b.vx===0 && b.vy===0);
+  if(stopped){
+    POOL.running = false;
+    // Resolve shot
+    setTimeout(resolvePoolShot, 100);
+  }
+}
+
+function resolvePoolShot(){
+  // Did we sink the cue?
+  if(POOL.cue.sunk){
+    POOL.pot -= POOL.bet;
+    poolResult(false, "You scratched. Cue ball in the corner pocket. Bears fan cracks his knuckles. <br><br>You owe <b>$"+POOL.bet+"</b>.", () => {
+      if(POOL.pot <= -300){
+        poolFinalize(false);
+        return;
+      }
+      // Continue: re-rack
+      nextPoolRound(true);
+    });
+    return;
+  }
+  // Did we sink at least one target this shot? (via sunkThisRound accumulator)
+  // Only targets remaining?
+  const remainingTargets = POOL.balls.filter(b => b.type==="target" && !b.sunk).length;
+  if(remainingTargets === 0){
+    // Ran the table — big win
+    POOL.pot += POOL.bet * 3;
+    poolResult(true, "You ran the table. <br>The Bears fan sets down his cue very slowly. <br><br>Win: <b>$"+(POOL.bet*3)+"</b>", () => {
+      nextPoolRound(false);
+    });
+    return;
+  }
+  if(POOL.sunkThisRound > 0){
+    POOL.pot += POOL.bet;
+    const sunk = POOL.sunkThisRound;
+    POOL.sunkThisRound = 0;
+    poolResult(true, `Sunk ${sunk}. Keep stroking. <br><br>Win: <b>$${POOL.bet}</b>`, () => {
+      POOL.bet = Math.min(300, POOL.bet + 50); // escalate
+      // Don't re-rack — same table, keep shooting
+      updatePoolHud();
+    });
+    return;
+  }
+  // Missed everything
+  POOL.pot -= Math.floor(POOL.bet/2);
+  poolResult(false, `Missed. Bears fan smirks.<br><br>Lose: <b>$${Math.floor(POOL.bet/2)}</b>`, () => {
+    if(POOL.pot <= -300){ poolFinalize(false); return; }
+    updatePoolHud();
+  });
+}
+
+function poolResult(isWin, detail, onDone){
+  const r = document.getElementById("pool-result");
+  document.getElementById("pool-result-big").textContent = isWin ? "NICE SHOT" : "MISSED";
+  document.getElementById("pool-result-big").className = "big " + (isWin?"win":"lose");
+  document.getElementById("pool-result-detail").innerHTML = detail;
+  const btn = document.getElementById("pool-result-btn");
+  btn.textContent = "Continue";
+  btn.onclick = () => { r.classList.remove("active"); onDone && onDone(); updatePoolHud(); };
+  r.classList.add("active");
+}
+
+function nextPoolRound(scratched){
+  POOL.round++;
+  if(POOL.round > POOL.maxRounds){
+    poolFinalize(POOL.pot > 0);
+    return;
+  }
+  POOL.bet = Math.min(300, POOL.bet + 50);
+  setupPoolRack();
+  updatePoolHud();
+}
+
+function poolCashOut(){
+  poolFinalize(POOL.pot > 0);
+}
+
+function poolLeave(){
+  // Player walks away. If in the hole, that's bad. If up, take winnings.
+  poolFinalize(POOL.pot > 0);
+}
+
+function poolFinalize(won){
+  document.getElementById("pool-modal").classList.remove("active");
+  const earned = POOL.pot;
+  // Money -> state
+  state.money += earned;
+  if(won && earned >= 500){
+    if(!state.inventory.includes("cash500") && state.inventory.length < 6){
+      state.inventory.push("cash500");
+    }
+  }
+  // Invoke onWin / onLose (scene IDs or {next, effects})
+  const branch = (won && earned >= 400) ? POOL.onWin : POOL.onLose;
+  renderInventory(); renderStats();
+  if(typeof branch === "string"){ renderScene(branch); }
+  else if(branch && branch.next){
+    if(branch.effects) applyEffects(branch.effects, null);
+    renderScene(branch.next);
+  }
+}
+
+function drawPool(){
+  const ctx = POOL.ctx;
+  ctx.clearRect(0,0,POOL.W, POOL.H);
+  // Felt
+  ctx.fillStyle = "#0c5834";
+  ctx.fillRect(0,0,POOL.W,POOL.H);
+  // Rails
+  ctx.fillStyle = "#3e1d10";
+  ctx.fillRect(0,0,POOL.W,20);
+  ctx.fillRect(0,POOL.H-20,POOL.W,20);
+  ctx.fillRect(0,0,20,POOL.H);
+  ctx.fillRect(POOL.W-20,0,20,POOL.H);
+  // Pockets
+  POOL.pockets.forEach(p => {
+    ctx.fillStyle = "#000";
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  });
+  // Dotted mid
+  ctx.strokeStyle = "rgba(255,255,255,.05)";
+  ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(20,260); ctx.lineTo(320,260); ctx.stroke();
+  ctx.setLineDash([]);
+  // Balls
+  POOL.balls.forEach(b => {
+    if(b.sunk) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.fillStyle = b.color;
+    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fill();
+    // Highlight
+    ctx.fillStyle = "rgba(255,255,255,.4)";
+    ctx.beginPath();
+    ctx.arc(b.x-3,b.y-3,b.r*0.4,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,.6)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  });
+  // Aim line
+  if(POOL.aiming && POOL.aimEnd && !POOL.running){
+    const dx = POOL.cue.x - POOL.aimEnd.x;
+    const dy = POOL.cue.y - POOL.aimEnd.y;
+    const dist = Math.min(Math.hypot(dx,dy), 120);
+    const ang = Math.atan2(dy,dx);
+    // Forward trajectory
+    ctx.strokeStyle = `rgba(255,202,40,${0.4 + dist/300})`;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5,5]);
+    ctx.beginPath();
+    ctx.moveTo(POOL.cue.x, POOL.cue.y);
+    ctx.lineTo(POOL.cue.x + Math.cos(ang)*dist*2.2, POOL.cue.y + Math.sin(ang)*dist*2.2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Power ring on cue
+    ctx.strokeStyle = "#ffca28";
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(POOL.cue.x, POOL.cue.y, 12 + dist/10, 0, Math.PI*2); ctx.stroke();
+  }
+}
+
+</script>
+
+<!-- ============================================================
+     v3 ADDITIONS — procedurally-synthesized sound effects (Web Audio)
+     ============================================================ -->
+<style>
+.hud-sound{background:#1f2040;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border:1px solid #3a3a5a;flex-shrink:0;margin-right:6px}
+.hud-sound.muted{opacity:.5}
+</style>
+<script>
+/* =========================================================================
+   SFX — all sounds procedurally generated. No audio files shipped.
+   ========================================================================= */
+const SFX = {
+  ctx: null,
+  enabled: true,
+  master: 0.55,
+  init(){
+    if(!this.ctx){
+      try {
+        this.ctx = new (window.AudioContext||window.webkitAudioContext)();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = this.master;
+        this.masterGain.connect(this.ctx.destination);
+      } catch(e){ this.enabled = false; return; }
+    }
+    if(this.ctx.state === "suspended") this.ctx.resume();
+  },
+  setMute(muted){
+    this.enabled = !muted;
+    try{ localStorage.setItem("fns_mute", muted ? "1" : "0"); }catch(e){}
+    if(this.masterGain){ this.masterGain.gain.value = muted ? 0 : this.master; }
+  },
+  tone(freq, dur, opts={}){
+    if(!this.enabled) return;
+    this.init(); if(!this.ctx) return;
+    const {type="sine", attack=0.005, release=0.04, volume=0.15, startAt=0, slideTo=null} = opts;
+    const t0 = this.ctx.currentTime + startAt;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if(slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+    osc.connect(g); g.connect(this.masterGain);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(volume, t0 + attack);
+    g.gain.linearRampToValueAtTime(0, t0 + dur + release);
+    osc.start(t0); osc.stop(t0 + dur + release + 0.05);
+  },
+  noise(dur, opts={}){
+    if(!this.enabled) return;
+    this.init(); if(!this.ctx) return;
+    const {volume=0.2, filter=800, type="lowpass", startAt=0, Q=1} = opts;
+    const t0 = this.ctx.currentTime + startAt;
+    const bufSize = Math.max(1, Math.floor(this.ctx.sampleRate * dur));
+    const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<bufSize;i++) d[i] = Math.random()*2-1;
+    const src = this.ctx.createBufferSource(); src.buffer = buf;
+    const f = this.ctx.createBiquadFilter();
+    f.type = type; f.frequency.value = filter; f.Q.value = Q;
+    const g = this.ctx.createGain();
+    src.connect(f); f.connect(g); g.connect(this.masterGain);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(volume, t0+0.004);
+    g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    src.start(t0);
+  },
+
+  /* ---------- Event sounds ---------- */
+  click(){ this.tone(900, 0.02, {type:"square", volume:0.08}); },
+  tap(){ this.tone(1200, 0.015, {type:"triangle", volume:0.06}); },
+  choose(){
+    this.tone(440, 0.06, {type:"sine", volume:0.14});
+    this.tone(660, 0.08, {type:"sine", volume:0.1, startAt:0.04});
+  },
+  open(){ this.tone(320, 0.06, {type:"triangle", volume:0.14, slideTo:540}); },
+  close(){ this.tone(540, 0.06, {type:"triangle", volume:0.1, slideTo:300}); },
+  success(){
+    this.tone(523, 0.08, {type:"sine", volume:0.14});
+    this.tone(659, 0.08, {type:"sine", volume:0.14, startAt:0.08});
+    this.tone(784, 0.18, {type:"sine", volume:0.14, startAt:0.16});
+  },
+  crit(){
+    this.tone(523, 0.1, {type:"triangle", volume:0.2});
+    this.tone(659, 0.1, {type:"triangle", volume:0.2, startAt:0.08});
+    this.tone(784, 0.1, {type:"triangle", volume:0.2, startAt:0.16});
+    this.tone(1046, 0.25, {type:"triangle", volume:0.2, startAt:0.24});
+  },
+  fail(){
+    this.tone(220, 0.12, {type:"sawtooth", volume:0.14, slideTo:180});
+    this.tone(196, 0.18, {type:"sawtooth", volume:0.1, startAt:0.08, slideTo:150});
+  },
+  critFail(){
+    this.tone(200, 0.3, {type:"sawtooth", volume:0.2, slideTo:80});
+    this.noise(0.2, {volume:0.18, filter:400, startAt:0.05});
+  },
+  damage(){
+    this.noise(0.12, {volume:0.3, filter:600});
+    this.tone(90, 0.18, {type:"sine", volume:0.35, slideTo:50});
+  },
+  hurt(){
+    this.tone(180, 0.2, {type:"sawtooth", volume:0.18, slideTo:120});
+  },
+  death(){
+    this.tone(110, 1.0, {type:"sawtooth", volume:0.22, slideTo:55});
+    this.tone(82, 1.4, {type:"sawtooth", volume:0.22, startAt:0.15, slideTo:41});
+    this.noise(1.5, {volume:0.08, filter:300, startAt:0.1});
+  },
+  buzz(){
+    this.tone(180, 0.06, {type:"triangle", volume:0.1});
+    this.tone(180, 0.06, {type:"triangle", volume:0.1, startAt:0.09});
+    this.tone(180, 0.06, {type:"triangle", volume:0.1, startAt:0.18});
+  },
+  ring(){
+    for(let i=0;i<3;i++){
+      this.tone(880, 0.06, {type:"sine", volume:0.1, startAt:i*0.13});
+      this.tone(1100, 0.06, {type:"sine", volume:0.08, startAt:i*0.13+0.04});
+    }
+  },
+  dice(){
+    for(let i=0;i<12;i++){
+      this.tone(200+Math.random()*500, 0.03, {type:"square", volume:0.05, startAt:i*0.045});
+    }
+  },
+  diceland(){
+    this.tone(150, 0.08, {type:"square", volume:0.22});
+    this.noise(0.05, {volume:0.1, filter:1200, startAt:0.01});
+  },
+  pool(){
+    this.tone(1400, 0.02, {type:"triangle", volume:0.22, slideTo:900});
+    this.noise(0.015, {volume:0.12, filter:3000});
+  },
+  pocket(){
+    this.tone(90, 0.14, {type:"sine", volume:0.3, attack:0.004, release:0.12, slideTo:55});
+  },
+  gunshot(){
+    this.noise(0.035, {volume:0.55, filter:4000});
+    this.tone(70, 0.1, {type:"square", volume:0.4, slideTo:30});
+    this.noise(0.25, {volume:0.15, filter:200, startAt:0.03});
+  },
+  heartbeat(){
+    this.tone(60, 0.08, {type:"sine", volume:0.3});
+    this.tone(60, 0.08, {type:"sine", volume:0.2, startAt:0.22});
+  },
+  power(){
+    this.tone(440, 0.15, {type:"sine", volume:0.15, slideTo:880});
+    this.tone(554, 0.15, {type:"sine", volume:0.15, slideTo:1108, startAt:0.05});
+    this.tone(659, 0.25, {type:"sine", volume:0.15, slideTo:1318, startAt:0.1});
+  },
+  pickup(){
+    this.tone(660, 0.05, {type:"triangle", volume:0.12});
+    this.tone(990, 0.1, {type:"triangle", volume:0.12, startAt:0.04});
+  },
+  money(){
+    this.tone(880, 0.04, {type:"sine", volume:0.1});
+    this.tone(1109, 0.04, {type:"sine", volume:0.1, startAt:0.05});
+    this.tone(1318, 0.1, {type:"sine", volume:0.12, startAt:0.1});
+  },
+};
+
+/* Load mute preference */
+try {
+  const muted = localStorage.getItem("fns_mute") === "1";
+  if(muted) SFX.enabled = false;
+} catch(e){}
+
+/* ---------- Mute button in HUD ---------- */
+function buildSoundButton(){
+  const existing = document.getElementById("hud-sound");
+  if(existing) return;
+  const btn = document.createElement("button");
+  btn.className = "hud-sound";
+  btn.id = "hud-sound";
+  btn.onclick = () => { toggleMute(); };
+  const phoneBtn = document.getElementById("hud-phone");
+  phoneBtn.parentNode.insertBefore(btn, phoneBtn);
+  updateSoundButton();
+}
+function updateSoundButton(){
+  const btn = document.getElementById("hud-sound");
+  if(!btn) return;
+  btn.textContent = SFX.enabled ? "🔊" : "🔇";
+  btn.classList.toggle("muted", !SFX.enabled);
+}
+function toggleMute(){
+  SFX.setMute(SFX.enabled);
+  updateSoundButton();
+  if(SFX.enabled) SFX.click();
+}
+
+/* ---------- Hook sounds into the existing engine ---------- */
+
+// Unlock audio on first user gesture (needed on iOS/Safari)
+document.addEventListener("click", () => { SFX.init(); }, {once:true});
+document.addEventListener("touchstart", () => { SFX.init(); }, {once:true});
+
+// Play a quiet click on every button-ish click
+document.addEventListener("click", (e) => {
+  const el = e.target.closest(".choice, .title-btn, .cs-card, .pool-btn, .check-btn, .hud-phone, .hud-sound, .phone-close, .cs-back");
+  if(!el) return;
+  if(el.classList.contains("choice")){ SFX.choose(); return; }
+  if(el.classList.contains("title-btn")){ SFX.choose(); return; }
+  if(el.classList.contains("cs-card") && el.classList.contains("available")){ SFX.choose(); return; }
+  if(el.classList.contains("check-btn")){ SFX.tap(); return; }
+  SFX.click();
+});
+
+// Wrap renderScene to play a scene change tone, and add the sound button to the HUD
+const _v3_origRenderScene = renderScene;
+renderScene = function(id){
+  _v3_origRenderScene(id);
+  buildSoundButton(); updateSoundButton();
+  SFX.tap();
+  // Play scene-specific stings
+  const sc = SCENES[id];
+  if(!sc) return;
+  if(sc.onEnter){
+    if(sc.onEnter.hp && sc.onEnter.hp < 0) { setTimeout(()=>SFX.damage(), 80); }
+    if(sc.onEnter.items) SFX.pickup();
+    if(sc.onEnter.money) SFX.money();
+    if(sc.onEnter.power) SFX.power();
+    if(sc.onEnter.toast) SFX.buzz();
+  }
+  if(id && id.includes("DEATH")) SFX.death();
+  if(id && (id.includes("gun_win") || id.includes("shot_dmitri"))) SFX.gunshot();
+  // Warn heartbeat if HP is low
+  if(state.hp === 1){ setTimeout(()=>SFX.heartbeat(), 500); }
+};
+
+// Wrap showDeath to play the drone
+const _v3_origShowDeath = showDeath;
+showDeath = function(cause, title, time){
+  SFX.death();
+  _v3_origShowDeath(cause, title, time);
+};
+
+// Wrap skill check rolling to play dice and resolution sounds
+const _v3_origRollCheck = rollCheck;
+rollCheck = function(){
+  SFX.dice();
+  _v3_origRollCheck();
+  // Listen for the continue button showing — that's when the die has landed
+  const wait = setInterval(() => {
+    if(document.getElementById("check-continue-btn").classList.contains("show")){
+      clearInterval(wait);
+      SFX.diceland();
+      setTimeout(() => {
+        const out = _pendingCheck && _pendingCheck._outcome;
+        if(!out) return;
+        if(out.critFail) SFX.critFail();
+        else if(out.crit) SFX.crit();
+        else if(out.success) SFX.success();
+        else SFX.fail();
+      }, 180);
+    }
+  }, 60);
+};
+
+// Wrap showPhoneToast for buzz sound
+const _v3_origShowPhoneToast = showPhoneToast;
+showPhoneToast = function(t){ SFX.buzz(); _v3_origShowPhoneToast(t); };
+
+// Wrap startPool for initial sounds
+const _v3_origStartPool = startPool;
+startPool = function(onWin, onLose){
+  SFX.open();
+  _v3_origStartPool(onWin, onLose);
+};
+
+// Hook pool physics events — play ball-collision and pocket sounds
+const _v3_origStepPool = stepPool;
+stepPool = function(){
+  const wasRunning = POOL.running;
+  const preSunk = POOL.balls.filter(b=>b.sunk).length;
+  const preVel = POOL.balls.map(b=>({x:b.vx, y:b.vy}));
+  _v3_origStepPool();
+  const postSunk = POOL.balls.filter(b=>b.sunk).length;
+  if(postSunk > preSunk) SFX.pocket();
+  // Detect ball-ball collision by velocity sign flip
+  for(let i=0;i<POOL.balls.length;i++){
+    const b = POOL.balls[i]; const pv = preVel[i];
+    if(!pv) continue;
+    const preMag = Math.hypot(pv.x, pv.y);
+    const postMag = Math.hypot(b.vx, b.vy);
+    // A collision sends off a quick velocity change; play click when magnitude jumps
+    if(preMag > 2 && Math.abs(preMag - postMag) > 1.2){
+      SFX.pool();
+      break;
+    }
+  }
+};
+
+// Pool leave / cash out close sound
+const _v3_origPoolFinalize = poolFinalize;
+poolFinalize = function(won){
+  SFX.close();
+  if(won) SFX.money();
+  _v3_origPoolFinalize(won);
+};
+
+// Character select and title transitions
+const _v3_origStartGame = startGame;
+startGame = function(char){
+  SFX.init();
+  SFX.choose();
+  _v3_origStartGame(char);
+};
+const _v3_origShowCharacterSelect = showCharacterSelect;
+showCharacterSelect = function(){ SFX.open(); _v3_origShowCharacterSelect(); };
+
+// Phone open/close
+const _v3_origShowPhone = showPhone;
+showPhone = function(){ SFX.open(); _v3_origShowPhone(); };
+const _v3_origHidePhone = hidePhone;
+hidePhone = function(){ SFX.close(); _v3_origHidePhone(); };
+
+</script>
+
+</body>
+</html>

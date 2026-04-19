@@ -31,7 +31,7 @@ img{display:block;max-width:100%}
 .title-btn.secondary:active{box-shadow:0 2px 0 #0d0e24;transform:translateY(3px)}
 
 /* ---------- Character Select ---------- */
-#character-select{background:#0a0a14 url('art/Character Select Screen Background.jpg') center center/cover no-repeat}
+#character-select{background:#0a0a14 url('Character Select Screen Background.jpg') center center/cover no-repeat}
 #character-select::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,20,.75),rgba(10,10,20,.92));pointer-events:none}
 .cs-header{position:relative;z-index:2;padding:24px 20px 12px;text-align:center}
 .cs-header h1{font-size:28px;color:#e91e63;text-transform:uppercase;letter-spacing:.08em;text-shadow:3px 3px 0 #000,0 0 18px rgba(233,30,99,.6)}
@@ -102,7 +102,7 @@ img{display:block;max-width:100%}
 /* ---------- Phone Overlay ---------- */
 #phone-overlay{position:absolute;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
 #phone-overlay.active{display:flex}
-.phone-frame{width:min(92%,340px);max-height:80vh;background:url('art/Phone Screen Overlay.jpg') center/contain no-repeat;position:relative;aspect-ratio:9/18;display:flex;flex-direction:column;overflow:hidden}
+.phone-frame{width:min(92%,340px);max-height:80vh;background:url('Phone Screen Overlay.jpg') center/contain no-repeat;position:relative;aspect-ratio:9/18;display:flex;flex-direction:column;overflow:hidden}
 .phone-screen{position:absolute;top:11%;left:9%;right:9%;bottom:11%;background:#12121e;border-radius:8px;padding:10px;display:flex;flex-direction:column;overflow:hidden}
 .phone-header{display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:8px;flex-shrink:0}
 .phone-title{font-weight:800;font-size:14px;color:#fff;margin-bottom:8px;flex-shrink:0}
@@ -118,7 +118,7 @@ img{display:block;max-width:100%}
 .phone-close{position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;border:1px solid #555;z-index:5}
 
 /* ---------- End Screen ---------- */
-#end-screen{background:#0a0a14 url('art/Game Over Dawn Screen.jpg') center top/contain no-repeat}
+#end-screen{background:#0a0a14 url('Game Over Dawn Screen.jpg') center top/contain no-repeat}
 #end-screen::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,20,.35) 0%,rgba(10,10,20,.8) 50%,rgba(10,10,20,.98) 100%)}
 .end-wrap{position:relative;z-index:2;flex:1;overflow-y:auto;padding:28px 22px;-webkit-overflow-scrolling:touch}
 .end-rating{text-align:center;margin-bottom:22px;padding-bottom:18px;border-bottom:2px solid #2a2a4a}
@@ -171,7 +171,7 @@ img{display:block;max-width:100%}
 
 <!-- ============= TITLE SCREEN ============= -->
 <div id="title-screen" class="screen active">
-  <img class="title-hero" src="art/Title Screen.jpg" alt="Friday Night Sim">
+  <img class="title-hero" src="Title Screen.jpg" alt="Friday Night Sim">
   <div class="title-tagline">
     <div class="kicker">Friday — 5:30 PM</div>
     <div class="lines">Four strangers.<br>One city.<br>One long, weird night.<br><br><b>6 PM to 6 AM.</b><br>No safe choices.</div>
@@ -191,19 +191,19 @@ img{display:block;max-width:100%}
   </div>
   <div class="cs-grid">
     <div class="cs-card available" onclick="startGame('bob')">
-      <img src="art/Bob - The Photojournalist.jpg" alt="Bob">
+      <img src="Bob - The Photojournalist.jpg" alt="Bob">
       <div class="cs-label"><div class="cs-role">The Photojournalist</div>Bob</div>
     </div>
     <div class="cs-card available" onclick="startGame('trisha')">
-      <img src="art/Trisha - The Librarian.jpg" alt="Trisha">
+      <img src="Trisha - The Librarian.jpg" alt="Trisha">
       <div class="cs-label"><div class="cs-role">The Librarian</div>Trisha</div>
     </div>
     <div class="cs-card locked">
-      <img src="art/Jack - The Car Salesman.jpg" alt="Jack">
+      <img src="Jack - The Car Salesman.jpg" alt="Jack">
       <div class="cs-label"><div class="cs-role">The Car Salesman</div>Jack</div>
     </div>
     <div class="cs-card locked">
-      <img src="art/Gina - The Pharma Rep.jpg" alt="Gina">
+      <img src="Gina - The Pharma Rep.jpg" alt="Gina">
       <div class="cs-label"><div class="cs-role">The Pharma Rep</div>Gina</div>
     </div>
   </div>
@@ -268,7 +268,7 @@ img{display:block;max-width:100%}
 /* ================================================================
    FRIDAY NIGHT SIM — Engine + Scene Data
    ================================================================ */
-const IMG = (name) => `art/${name}.jpg`;
+const IMG = (name) => `${name}.jpg`;
 
 /* ---------- Items ---------- */
 const ITEMS = {
